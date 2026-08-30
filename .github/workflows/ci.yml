@@ -56,9 +56,10 @@ jobs:
       - name: Build
         working-directory: frontend/frontend
         run: npm run build
+      - name: Install root deps for unit tests
+        run: npm install
       - name: Unit tests (coupon validation)
-        working-directory: .
-        run: npm test -- --coverage
+        run: npm test
       - name: Install Playwright
         run: npx playwright install --with-deps
       - name: E2E
