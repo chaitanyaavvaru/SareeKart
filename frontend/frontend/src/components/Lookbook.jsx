@@ -35,8 +35,14 @@ export default function Lookbook() {
     setActiveSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
+  // Keyboard a11y for carousel
+  const onKeyDown = (e) => {
+    if (e.key === 'ArrowRight') nextSlide();
+    if (e.key === 'ArrowLeft') prevSlide();
+  };
+
   return (
-    <section className="bg-[#2B0F1E] text-white py-24 sm:py-32 overflow-hidden relative">
+    <section onKeyDown={onKeyDown} tabIndex={0} aria-label="Heritage Lookbook carousel" className="bg-[#2B0F1E] text-white py-24 sm:py-32 overflow-hidden relative focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Lookbook Header */}
@@ -53,15 +59,17 @@ export default function Lookbook() {
           <div className="flex gap-4">
             <button 
               onClick={prevSlide}
-              className="w-12 h-12 rounded-full border border-white/20 hover:border-[#C89B3C] hover:text-[#C89B3C] flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Previous slide"
+              className="w-12 h-12 rounded-full border border-white/20 hover:border-[#C89B3C] hover:text-[#C89B3C] focus-visible:ring-2 focus-visible:ring-gold flex items-center justify-center transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             </button>
             <button 
               onClick={nextSlide}
-              className="w-12 h-12 rounded-full border border-white/20 hover:border-[#C89B3C] hover:text-[#C89B3C] flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="Next slide"
+              className="w-12 h-12 rounded-full border border-white/20 hover:border-[#C89B3C] hover:text-[#C89B3C] focus-visible:ring-2 focus-visible:ring-gold flex items-center justify-center transition-colors cursor-pointer"
             >
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -105,6 +113,18 @@ export default function Lookbook() {
                   <span className="text-[10px] uppercase font-bold text-white/50 tracking-widest">
                     Slide {activeSlide + 1} of {slides.length}
                   </span>
+                  <div className="flex items-center gap-1.5" role="tablist" aria-label="Lookbook slides">
+                    {slides.map((_, idx) => (
+                      <button
+                        key={idx}
+                        role="tab"
+                        aria-selected={idx === activeSlide}
+                        aria-label={`Go to slide ${idx + 1}`}
+                        onClick={() => setActiveSlide(idx)}
+                        className={`h-1.5 rounded-full transition-all ${idx === activeSlide ? 'w-6 bg-[#C89B3C]' : 'w-1.5 bg-white/30 hover:bg-white/50'}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
