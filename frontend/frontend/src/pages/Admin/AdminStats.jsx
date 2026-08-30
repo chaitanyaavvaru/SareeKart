@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   ShoppingBag, 
   ClipboardList, 
@@ -121,57 +122,31 @@ export default function AdminStats() {
         </div>
       )}
 
-      {/* Grid of Stat Cards */}
+      {/* Grid of Stat Cards – motion polish */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        {/* Total Revenue */}
-        <div className="bg-white border border-[#F4F4F4] rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow flex items-center gap-4">
-          <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-600 shrink-0 border border-green-100">
-            <IndianRupee className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Total Revenue</p>
-            <h3 className="text-xl font-bold text-text-primary mt-1 truncate">{formatCurrency(stats?.totalRevenue)}<span className='text-xs text-green-600 font-medium ml-1'>↑ 12%</span></h3>
-            <p className="text-[10px] text-green-600 mt-0.5 font-semibold">Processed bookings</p>
-          </div>
-        </div>
-
-        {/* Total Orders */}
-        <div className="bg-white border border-[#F4F4F4] rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0 border border-blue-100">
-            <ClipboardList className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Total Orders</p>
-            <h3 className="text-xl font-bold text-text-primary mt-1">{stats?.totalOrders}<span className='text-xs text-green-600 font-medium ml-1'>↑ 8%</span></h3>
-            <p className="text-[10px] text-text-secondary mt-0.5">Purchases registered</p>
-          </div>
-        </div>
-
-        {/* Total Products */}
-        <div className="bg-white border border-[#F4F4F4] rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow flex items-center gap-4">
-          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 shrink-0 border border-purple-100">
-            <ShoppingBag className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Active Products</p>
-            <h3 className="text-xl font-bold text-text-primary mt-1">{stats?.totalProducts}<span className='text-xs text-green-600 font-medium ml-1'>↑ 5%</span></h3>
-            <p className="text-[10px] text-text-secondary mt-0.5">In catalogs</p>
-          </div>
-        </div>
-
-        {/* Total Customers */}
-        <div className="bg-white border border-[#F4F4F4] rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow flex items-center gap-4">
-          <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0 border border-amber-100">
-            <Users className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-text-muted tracking-wider">Total Customers</p>
-            <h3 className="text-xl font-bold text-text-primary mt-1">{stats?.totalCustomers}<span className='text-xs text-green-600 font-medium ml-1'>↑ 3%</span></h3>
-            <p className="text-[10px] text-text-secondary mt-0.5">Registered accounts</p>
-          </div>
-        </div>
-
+        {[
+          { icon: IndianRupee, bg: 'bg-green-50 border-green-100 text-green-600', label: 'Total Revenue', value: formatCurrency(stats?.totalRevenue), trend: '↑ 12%', sub: 'Processed bookings' },
+          { icon: ClipboardList, bg: 'bg-blue-50 border-blue-100 text-blue-600', label: 'Total Orders', value: stats?.totalOrders ?? '—', trend: '↑ 8%', sub: 'Purchases registered' },
+          { icon: ShoppingBag, bg: 'bg-purple-50 border-purple-100 text-purple-600', label: 'Active Products', value: stats?.totalProducts ?? '—', trend: '↑ 5%', sub: 'In catalogs' },
+          { icon: Users, bg: 'bg-amber-50 border-amber-100 text-amber-600', label: 'Total Customers', value: stats?.totalCustomers ?? '—', trend: '↑ 3%', sub: 'Registered accounts' },
+        ].map((card, i) => (
+          <motion.div
+            key={card.label}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06, duration: 0.35, ease: 'easeOut' }}
+            className="bg-white border border-[#F4F4F4] rounded-2xl p-6 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4"
+          >
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border ${card.bg}`}>
+              <card.icon className="w-6 h-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase font-bold text-text-muted tracking-wider">{card.label}</p>
+              <h3 className="text-xl font-bold text-text-primary mt-1 truncate">{card.value}<span className='text-xs text-green-600 font-medium ml-1'>{card.trend}</span></h3>
+              <p className={`text-[10px] mt-0.5 font-semibold ${card.label.includes('Revenue') ? 'text-green-600' : 'text-text-secondary'}`}>{card.sub}</p>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
       {/* Target Progress & Quick Visual Card */}
@@ -186,9 +161,11 @@ export default function AdminStats() {
           </span>
         </div>
         <div className="w-full bg-[#f0ebe2] rounded-full h-3 overflow-hidden">
-          <div 
-            className="bg-gradient-to-r from-gold-dark to-gold h-full rounded-full transition-all duration-500" 
-            style={{ width: `${revenuePercent}%` }}
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${revenuePercent}%` }}
+            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
+            className="bg-gradient-to-r from-gold-dark to-gold h-full rounded-full" 
           />
         </div>
       </div>
