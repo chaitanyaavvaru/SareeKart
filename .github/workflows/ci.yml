@@ -1,0 +1,71 @@
+name: SareeKart CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: sareekart
+          MYSQL_ROOT_PASSWORD: sareekart123
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -psareekart123"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Backend tests
+        working-directory: backend/backend
+        run: ./mvnw -q test -Dtest=CouponServiceTest,RefundServiceTest,RefundReconciliationServiceTest -DfailIfNoTests=false
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3307/sareekart?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: sareekart123
+          JWT_SECRET: Zk9xV3bQ7mR2sY8wJ5hL4dN1pC6tG0fK9uE3rB7vX2zM5aS8qW4jH7nD2gT6yU1oP3iF9kR5sB8vM4cX
+          APP_RAZORPAY_ENABLED: false
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/frontend/package-lock.json
+      - name: Install frontend
+        working-directory: frontend/frontend
+        run: npm ci
+      - name: Lint
+        working-directory: frontend/frontend
+        run: npm run lint
+      - name: Build
+        working-directory: frontend/frontend
+        run: npm run build
+      - name: Unit tests (coupon validation)
+        working-directory: .
+        run: npm test -- --coverage
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+      - name: E2E
+        run: |
+          docker compose up -d mysql
+          ./backend/backend/mvnw -q spring-boot:run -Dspring-boot.run.arguments="--app.razorpay.enabled=false" &
+          sleep 40
+          npx playwright test --reporter=list
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3307/sareekart?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC

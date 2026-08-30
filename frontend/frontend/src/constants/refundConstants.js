@@ -1,0 +1,31 @@
+export const RefundReasonCode = {
+  CUSTOMER_REQUEST: 'CUSTOMER_REQUEST',
+  OUT_OF_STOCK: 'OUT_OF_STOCK',
+  DUPLICATE_PAYMENT: 'DUPLICATE_PAYMENT',
+  ORDER_CANCELLED: 'ORDER_CANCELLED',
+  PAYMENT_RECONCILIATION: 'PAYMENT_RECONCILIATION',
+  ADMIN_ADJUSTMENT: 'ADMIN_ADJUSTMENT',
+  OTHER: 'OTHER'
+};
+
+export const REFUND_REASON_LABELS = {
+  CUSTOMER_REQUEST: 'Customer Request',
+  OUT_OF_STOCK: 'Out of Stock',
+  DUPLICATE_PAYMENT: 'Duplicate Payment',
+  ORDER_CANCELLED: 'Order Cancelled',
+  PAYMENT_RECONCILIATION: 'Payment Reconciliation',
+  ADMIN_ADJUSTMENT: 'Admin Adjustment',
+  OTHER: 'Other'
+};
+
+export const REFUND_STATUS = {
+  PENDING: 'PENDING',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED'
+};
+
+export const REFUND_STATUS_LABELS = {
+  PENDING: 'Pending',
+  SUCCESS: 'Refunded',
+  FAILED: 'Failed'
+};

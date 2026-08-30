@@ -1,0 +1,97 @@
+name: sareekart
+
+# Full local stack: MySQL + Spring Boot backend + nginx-served frontend.
+#
+# Usage (from SareeKart/):
+#   cp .env.example .env   # then edit secrets
+#   docker compose up --build
+#
+# The frontend nginx proxies /api -> backend:8081, so the browser only ever
+# talks to :5173. MySQL's host port defaults to 3307 to avoid clashing with a
+# locally installed mysqld; override via MYSQL_HOST_PORT in .env.
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sareekart-mysql
+    environment:
+      MYSQL_DATABASE: sareekart
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_ROOT_HOST: '%'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "${MYSQL_HOST_PORT:-3307}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - sareekart-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend/backend
+      dockerfile: Dockerfile
+    container_name: sareekart-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/sareekart?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      APP_SEED_ENABLED: ${APP_SEED_ENABLED:-true}
+      APP_RAZORPAY_ENABLED: ${APP_RAZORPAY_ENABLED:-true}
+      APP_REFUND_RECONCILIATION_ENABLED: ${APP_REFUND_RECONCILIATION_ENABLED:-true}
+      APP_REFUND_RECONCILIATION_STALE_MINUTES: ${APP_REFUND_RECONCILIATION_STALE_MINUTES:-15}
+      APP_STORAGE_PROVIDER: ${APP_STORAGE_PROVIDER:-local}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      APP_SWEEPER_ENABLED: ${APP_SWEEPER_ENABLED:-true}
+      APP_SWEEPER_STALE_MINUTES: ${APP_SWEEPER_STALE_MINUTES:-30}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:?set RAZORPAY_KEY_ID in .env}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:?set RAZORPAY_KEY_SECRET in .env}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:?set RAZORPAY_WEBHOOK_SECRET in .env}
+    expose:
+      - "8081"
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - sareekart-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend/frontend
+      dockerfile: Dockerfile
+    container_name: sareekart-frontend
+    ports:
+      - "${FRONTEND_HOST_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - sareekart-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  backend_uploads:
+
+networks:
+  sareekart-network:
+    driver: bridge

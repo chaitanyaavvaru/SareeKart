@@ -1,0 +1,25 @@
+{
+  "name": "sareekart",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chaitanyaavvaru/SareeKart.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/chaitanyaavvaru/SareeKart/issues"
+  },
+  "homepage": "https://github.com/chaitanyaavvaru/SareeKart#readme",
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
+  }
+}

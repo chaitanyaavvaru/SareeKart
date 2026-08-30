@@ -1,0 +1,26 @@
+# Env
+.env
+
+# Deps
+node_modules/
+package-lock.json
+frontend/frontend/node_modules/
+backend/backend/target/
+*.log
+
+# OS
+.DS_Store
+.coverage/
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+
+# Uploads
+backend/backend/uploads/*
+!backend/backend/uploads/.gitkeep
+
+# Build
+frontend/frontend/dist/
