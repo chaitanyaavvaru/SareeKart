@@ -129,9 +129,10 @@ export default function Navbar() {
 
             {/* Wishlist Link */}
             <Link 
-              to="/orders" 
+              to="/wishlist" 
               className={`p-2 rounded-full hover:bg-black/5 transition-all ${iconClass}`}
               title="My Wishlist"
+              aria-label="Wishlist"
             >
               <Heart className="w-5 h-5" />
             </Link>

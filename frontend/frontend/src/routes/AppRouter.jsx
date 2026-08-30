@@ -12,6 +12,7 @@ import SilkLoader from '../components/common/SilkLoader';
 
 // Simple stub for my orders
 import MyOrders from '../pages/MyOrders';
+const WishlistPage = lazy(() => import('../pages/Wishlist/WishlistPage'));
 
 // Admin Pages – lazy for bundle split (Phase 12 polish)
 const AdminDashboard = lazy(() => import('../pages/Admin/AdminDashboard'));
@@ -54,6 +55,16 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <MyOrders />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="wishlist" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center"><SilkLoader /></div>}>
+                <WishlistPage />
+              </Suspense>
             </ProtectedRoute>
           } 
         />
