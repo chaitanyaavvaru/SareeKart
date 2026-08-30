@@ -17,6 +17,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [activeImage, setActiveImage] = useState('');
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -96,6 +97,33 @@ export default function ProductDetailPage() {
 
     loadProductData();
   }, [id, user]);
+
+  // Recently Viewed – track current product, hydrate list for display
+  useEffect(() => {
+    if (!product) return;
+    try {
+      const key = 'sareekart_recently_viewed';
+      const raw = localStorage.getItem(key);
+      let list = raw ? JSON.parse(raw) : [];
+      list = list.filter(p => String(p.id) !== String(product.id));
+      list.unshift({ id: product.id, name: product.name, price: product.price, images: product.images, fabric: product.fabric });
+      if (list.length > 8) list = list.slice(0, 8);
+      localStorage.setItem(key, JSON.stringify(list));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRecentlyViewed(list.filter(p => String(p.id) !== String(product.id)).slice(0, 4));
+    } catch { /* ignore storage */ }
+  }, [product]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('sareekart_recently_viewed');
+      if (raw) {
+        const list = JSON.parse(raw);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setRecentlyViewed(list.filter(p => String(p.id) !== String(id)).slice(0, 4));
+      }
+    } catch { /* ignore */ }
+  }, [id]);
 
   const handleAddToCart = () => {
     if (product) {
@@ -432,11 +460,48 @@ export default function ProductDetailPage() {
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between space-y-2">
                     <div>
-                      <span className="text-[10px] text-[#C9A227] font-semibold tracking-wider font-serif uppercase">{p.fabric || 'Silk'}</span>
+                      <span className="text-[10px] text-[#C89B3C] font-semibold tracking-wider font-serif uppercase">{p.fabric || 'Silk'}</span>
                       <h3 className="font-bold text-text-primary text-sm line-clamp-1 mt-0.5 group-hover:text-[#3A1028] transition-colors">{p.name}</h3>
                     </div>
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-sm font-extrabold text-[#3A1028]">₹{p.price.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── RECENTLY VIEWED ── */}
+        {recentlyViewed.length > 0 && (
+          <section className="border-t border-[#F4F4F4] pt-16">
+            <h2 className="text-2xl font-bold font-serif text-[#3A1028] mb-8">Recently Viewed</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {recentlyViewed.map((p) => (
+                <Link 
+                  to={`/products/${p.id}`}
+                  key={`recent-${p.id}`}
+                  className="group bg-white border border-[#F4F4F4] rounded-2xl overflow-hidden shadow-soft hover:shadow-luxury hover:-translate-y-0.5 transition-all flex flex-col h-full"
+                >
+                  <div className="relative h-72 overflow-hidden rounded-xl">
+                    <SafeImage 
+                      src={p.images && p.images.length > 0 ? p.images[0] : ""} 
+                      alt={p.name} 
+                      productName={p.name}
+                      category={p.fabric || 'Silk'}
+                      aspectRatioClass="aspect-[3/4]"
+                      className="w-full h-full object-cover object-top group-hover:scale-103 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="p-4 flex-grow flex flex-col justify-between space-y-2">
+                    <div>
+                      <span className="text-[10px] text-[#C89B3C] font-semibold tracking-wider font-serif uppercase">{p.fabric || 'Silk'}</span>
+                      <h3 className="font-bold text-text-primary text-sm line-clamp-1 mt-0.5 group-hover:text-[#3A1028] transition-colors">{p.name}</h3>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-sm font-extrabold text-[#3A1028]">₹{Number(p.price).toLocaleString('en-IN')}</span>
+                      <span className="text-[11px] text-text-muted">Viewed</span>
                     </div>
                   </div>
                 </Link>
