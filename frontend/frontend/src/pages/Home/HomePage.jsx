@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence } from 'framer-motion';
@@ -6,34 +6,36 @@ import { closeAddedModal, setCartOpen } from '../../redux/slices/cartSlice';
 import productService from '../../services/productService';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
-// Premium Modular Homepage Components
+// Premium Modular Homepage Components – above-the-fold eager
 import OfferBar from '../../components/OfferBar';
 import Hero from '../../components/Hero';
-import ProductGrid from '../../components/ProductGrid';
-import CelebritySection from '../../components/CelebritySection';
 import api from '../../api/axiosConfig';
 import SEO from '../../components/common/SEO';
-
-// New Brand Expanded Sections
-import HeritageStory from '../../components/HeritageStory';
-import WeddingCollection from '../../components/WeddingCollection';
-import HandloomTimeline from '../../components/HandloomTimeline';
-import ReviewsSection from '../../components/ReviewsSection';
-import InstagramGallery from '../../components/InstagramGallery';
-import SignatureCollections from '../../components/SignatureCollections';
-import Newsletter from '../../components/Newsletter';
-
-// Award-Winning Editorial Additions
 import SilkLoader from '../../components/common/SilkLoader';
-import ArtisanDocumentary from '../../components/ArtisanDocumentary';
-import Lookbook from '../../components/Lookbook';
 
-// Newly Designed Interactive Luxury Additions
-import FabricInspector from '../../components/FabricInspector';
-import MeetArtisans from '../../components/MeetArtisans';
-import ShopByOccasion from '../../components/ShopByOccasion';
-import ShopByFabric from '../../components/ShopByFabric';
-import ShopByRegion from '../../components/ShopByRegion';
+// Lazy below-the-fold for perf – code-split
+const ProductGrid = lazy(() => import('../../components/ProductGrid'));
+const CelebritySection = lazy(() => import('../../components/CelebritySection'));
+const HeritageStory = lazy(() => import('../../components/HeritageStory'));
+const WeddingCollection = lazy(() => import('../../components/WeddingCollection'));
+const HandloomTimeline = lazy(() => import('../../components/HandloomTimeline'));
+const ReviewsSection = lazy(() => import('../../components/ReviewsSection'));
+const InstagramGallery = lazy(() => import('../../components/InstagramGallery'));
+const SignatureCollections = lazy(() => import('../../components/SignatureCollections'));
+const Newsletter = lazy(() => import('../../components/Newsletter'));
+const ArtisanDocumentary = lazy(() => import('../../components/ArtisanDocumentary'));
+const Lookbook = lazy(() => import('../../components/Lookbook'));
+const FabricInspector = lazy(() => import('../../components/FabricInspector'));
+const MeetArtisans = lazy(() => import('../../components/MeetArtisans'));
+const ShopByOccasion = lazy(() => import('../../components/ShopByOccasion'));
+const ShopByFabric = lazy(() => import('../../components/ShopByFabric'));
+const ShopByRegion = lazy(() => import('../../components/ShopByRegion'));
+
+const SectionFallback = () => (
+  <div className="max-w-[1480px] mx-auto px-10 sm:px-20 py-16">
+    <div className="h-64 bg-[#F9F6F1] rounded-[20px] animate-pulse border border-[#F4F2EB]" />
+  </div>
+);
 
 export default function HomePage() {
   const { user } = useSelector(state => state.auth);
@@ -112,13 +114,13 @@ export default function HomePage() {
         <Hero />
 
         {/* 2. Brand Story (Our Legacy Narrative Section) */}
-        <HeritageStory />
+        <Suspense fallback={<SectionFallback />}><HeritageStory /></Suspense>
 
         {/* 3. Craftsmanship (Artisan Documentary Video Block) */}
-        <ArtisanDocumentary />
+        <Suspense fallback={<SectionFallback />}><ArtisanDocumentary /></Suspense>
 
         {/* 4. Signature Collections (100vh split layouts) */}
-        <SignatureCollections />
+        <Suspense fallback={<SectionFallback />}><SignatureCollections /></Suspense>
 
         {/* 5. Featured Sarees (Bestsellers Product Gallery Showcase) */}
         <section className="max-w-[1480px] mx-auto px-10 sm:px-20 py-32 border-t border-[#F4F2EB] bg-white rounded-[20px] shadow-luxury mt-6 min-h-[110vh] flex flex-col justify-between">
@@ -162,50 +164,50 @@ export default function HomePage() {
               </Link>
             </div>
           ) : (
-            <ProductGrid 
+            <Suspense fallback={<SectionFallback />}><ProductGrid 
               products={featuredProducts} 
               wishlistIds={wishlistProductIds} 
               onAddSuccess={handleAddSuccess}
               onWishlistToggle={handleWishlistToggle}
-            />
+            /></Suspense>
           )}
         </section>
 
         {/* Fabric zoom experience (100vh) */}
-        <FabricInspector />
+        <Suspense fallback={<SectionFallback />}><FabricInspector /></Suspense>
 
         {/* 6. Wedding Collection (The Golden Muhurtham Wedding Feature) */}
-        <WeddingCollection />
+        <Suspense fallback={<SectionFallback />}><WeddingCollection /></Suspense>
 
         {/* 7. Shop by Occasion (95vh) */}
-        <ShopByOccasion />
+        <Suspense fallback={<SectionFallback />}><ShopByOccasion /></Suspense>
 
         {/* 8. Shop by Fabric (95vh) */}
-        <ShopByFabric />
+        <Suspense fallback={<SectionFallback />}><ShopByFabric /></Suspense>
 
         {/* 9. Shop by Region */}
-        <ShopByRegion />
+        <Suspense fallback={<SectionFallback />}><ShopByRegion /></Suspense>
 
         {/* 10. Meet the Artisans */}
-        <MeetArtisans />
+        <Suspense fallback={<SectionFallback />}><MeetArtisans /></Suspense>
 
         {/* 11. Heritage Timeline (Weaver Making & Production Timeline) */}
-        <HandloomTimeline />
+        <Suspense fallback={<SectionFallback />}><HandloomTimeline /></Suspense>
 
         {/* 12. Celebrity Inspirations (Celebrity Picks showcase) */}
-        <CelebritySection />
+        <Suspense fallback={<SectionFallback />}><CelebritySection /></Suspense>
 
         {/* 13. Customer Stories (Customer Appreciation Reviews) */}
-        <ReviewsSection />
+        <Suspense fallback={<SectionFallback />}><ReviewsSection /></Suspense>
 
         {/* Lookbook Editorial Slider Carousel */}
-        <Lookbook />
+        <Suspense fallback={<SectionFallback />}><Lookbook /></Suspense>
 
         {/* 14. Instagram visual gallery diary */}
-        <InstagramGallery />
+        <Suspense fallback={<SectionFallback />}><InstagramGallery /></Suspense>
 
         {/* 15. Newsletter (Weaver Guild Registration) */}
-        <Newsletter />
+        <Suspense fallback={<SectionFallback />}><Newsletter /></Suspense>
 
       </div>
     </>

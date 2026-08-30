@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { addToCart } from '../redux/slices/cartSlice';
 import WishlistButton from './WishlistButton';
@@ -9,7 +9,7 @@ import Rating from './Rating';
 import { ShoppingBag, Eye } from 'lucide-react';
 import SafeImage from './common/SafeImage';
 
-export default function ProductCard({ product, onAddSuccess, initialWishlisted = false, onWishlistToggle }) {
+function ProductCard({ product, onAddSuccess, initialWishlisted = false, onWishlistToggle }) {
   const dispatch = useDispatch();
   const [isHovered, setIsHovered] = useState(false);
 
@@ -148,3 +148,5 @@ export default function ProductCard({ product, onAddSuccess, initialWishlisted =
     </motion.div>
   );
 }
+
+export default memo(ProductCard);
