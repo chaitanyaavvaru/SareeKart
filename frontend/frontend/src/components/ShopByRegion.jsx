@@ -87,12 +87,16 @@ export default function ShopByRegion() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
           
           {/* Left Column: Interactive Regions Selector (Span 5 cols) */}
-          <div className="lg:col-span-5 flex flex-col divide-y divide-[#E6DFD3] text-left">
+          <div className="lg:col-span-5 flex flex-col divide-y divide-[#E6DFD3] text-left" role="tablist" aria-label="Weaving regions">
             {REGIONS_DATA.map((reg) => (
               <button
                 key={reg.id}
+                id={`region-tab-${reg.id}`}
+                role="tab"
+                aria-selected={selectedRegion.id === reg.id}
+                aria-controls={`region-panel-${reg.id}`}
                 onClick={() => setSelectedRegion(reg)}
-                className={`py-6 flex items-center justify-between group focus:outline-none transition-all ${
+                className={`py-6 flex items-center justify-between group focus:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-lg transition-all ${
                   selectedRegion.id === reg.id ? 'pl-4' : 'pl-0'
                 }`}
               >
@@ -116,7 +120,7 @@ export default function ShopByRegion() {
           </div>
 
           {/* Right Column: Immersive Detail Card (Span 7 cols) */}
-          <div className="lg:col-span-7 bg-[#2B0F1E] text-white rounded-[28px] p-8 sm:p-12 border border-[#C89B3C]/30 shadow-luxury relative overflow-hidden min-h-[600px] flex flex-col justify-between">
+          <div className="lg:col-span-7 bg-[#2B0F1E] text-white rounded-[28px] p-8 sm:p-12 border border-[#C89B3C]/30 shadow-luxury relative overflow-hidden min-h-[600px] flex flex-col justify-between" role="tabpanel" id={`region-panel-${selectedRegion.id}`} aria-labelledby={`region-tab-${selectedRegion.id}`}>
             <div className="absolute top-0 right-0 w-48 h-48 bg-[radial-gradient(#C89B3C_1px,transparent_1px)] [background-size:20px_20px] opacity-10 pointer-events-none"></div>
 
             <AnimatePresence mode="wait">
@@ -187,9 +191,10 @@ export default function ShopByRegion() {
             <div className="pt-6 border-t border-white/10 mt-8 flex justify-end">
               <button 
                 onClick={() => handleShopRegion(selectedRegion.name)}
-                className="w-full sm:w-auto px-8 py-4 bg-[#C89B3C] hover:bg-[#A37E30] text-[#2B0F1E] font-bold rounded-xl text-xs uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow"
+                aria-label={`Shop ${selectedRegion.name} collection`}
+                className="w-full sm:w-auto px-8 py-4 bg-[#C89B3C] hover:bg-[#A37E30] text-[#2B0F1E] font-bold rounded-xl text-xs uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow focus-visible:ring-2 focus-visible:ring-white/50"
               >
-                Shop Region Collection <ArrowRight className="w-4 h-4" />
+                Shop Region Collection <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </div>
