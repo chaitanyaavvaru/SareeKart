@@ -70,3 +70,11 @@ jobs:
           npx playwright test --reporter=list
         env:
           SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3307/sareekart?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: sareekart123
+          DB_PASSWORD: sareekart123
+          JWT_SECRET: Zk9xV3bQ7mR2sY8wJ5hL4dN1pC6tG0fK9uE3rB7vX2zM5aS8qW4jH7nD2gT6yU1oP3iF9kR5sB8vM4cX
+          RAZORPAY_KEY_ID: rzp_test_dummy
+          RAZORPAY_KEY_SECRET: dummy_secret
+          RAZORPAY_WEBHOOK_SECRET: dummy_webhook
+          APP_RAZORPAY_ENABLED: false
