@@ -24,3 +24,8 @@ backend/backend/uploads/*
 
 # Build
 frontend/frontend/dist/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
