@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Search, Loader2, RefreshCw, CheckCircle2, XCircle, Clock3,
-  IndianRupee, AlertTriangle, Package, Filter, X, ShieldAlert
+  IndianRupee, AlertTriangle, Package, Filter, X, ShieldAlert, CheckSquare, Square
 } from 'lucide-react';
 import refundService from '../../services/refundService';
 import api from '../../api/axiosConfig';
@@ -26,6 +26,8 @@ export default function ManageRefunds() {
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
   const [reconciling, setReconciling] = useState(false);
+  const [selectedAnomalies, setSelectedAnomalies] = useState(new Set());
+  const [resolving, setResolving] = useState(false);
 
   const fetchAll = async () => {
     try {
@@ -86,6 +88,32 @@ export default function ManageRefunds() {
     } catch (e) {
       alert(e.response?.data?.message || 'Reconciliation failed');
     } finally { setReconciling(false); }
+  };
+
+  const toggleAnomaly = (id) => {
+    const next = new Set(selectedAnomalies);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedAnomalies(next);
+  };
+  const toggleAllAnomalies = () => {
+    const openIds = anomalies.filter(a => !a.resolved).map(a => a.id);
+    if (openIds.every(id => selectedAnomalies.has(id))) setSelectedAnomalies(new Set());
+    else setSelectedAnomalies(new Set(openIds));
+  };
+  const bulkResolve = async () => {
+    if (selectedAnomalies.size === 0) return;
+    if (!window.confirm(`Resolve ${selectedAnomalies.size} anomalies?`)) return;
+    setResolving(true);
+    try {
+      for (const id of selectedAnomalies) {
+        try { await api.patch(`/admin/reconciliation/anomalies/${id}/resolve`); } catch { /* ignore */ }
+      }
+      setSelectedAnomalies(new Set());
+      await fetchAll();
+    } finally { setResolving(false); }
+  };
+  const resolveOne = async (id) => {
+    try { await api.patch(`/admin/reconciliation/anomalies/${id}/resolve`); await fetchAll(); } catch (e) { alert(e.response?.data?.message || 'Resolve failed'); }
   };
 
   const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
@@ -168,10 +196,10 @@ export default function ManageRefunds() {
           <Package className="w-10 h-10 text-text-muted mx-auto mb-3" /><h3 className="font-bold text-maroon">No refunds found</h3><p className="text-xs text-text-secondary mt-1">No refunds match the current filter.</p>
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-xl shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-[#FAF8F5] border-b border-border text-xs">
                   <th className="px-4 py-3 text-[10px] uppercase font-bold text-text-muted tracking-wider">Order</th>
                   <th className="px-4 py-3 text-[10px] uppercase font-bold text-text-muted tracking-wider">Amount</th>
@@ -201,29 +229,65 @@ export default function ManageRefunds() {
               </tbody>
             </table>
           </div>
+          <div className="md:hidden divide-y divide-border">
+            {filtered.map(r => (
+              <div key={`m-${r.id}`} className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-maroon text-sm">{r.orderNumber || `#${r.orderId}`}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadge(r.status)}`}>{REFUND_STATUS_LABELS[r.status] ?? r.status}</span>
+                </div>
+                <div className="flex justify-between text-xs"><span className="text-text-muted">Amount</span><span className="font-bold">{fmt(r.amount)}</span></div>
+                <div className="text-xs"><span className="text-text-muted">Reason:</span> <span className="font-medium">{r.reason || '—'}</span> <span className="text-text-muted">· {REFUND_REASON_LABELS[r.reasonCode] || r.reasonCode}</span></div>
+                {r.errorMessage && <p className="text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-2 py-1">⚠ {r.errorMessage}</p>}
+                <div className="flex justify-between text-[11px] text-text-muted font-mono"><span>{r.providerRefundId ? `...${String(r.providerRefundId).slice(-8)}` : '—'}</span><span>{r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '—'}</span></div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Anomalies – reconciliation insight */}
+      {/* Anomalies – reconciliation insight + bulk-resolve */}
       {anomalies.length > 0 && (
-        <div className="bg-white border border-border rounded-xl shadow-xs overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+        <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+            <button onClick={toggleAllAnomalies} aria-label="Select all open anomalies" className="text-text-muted hover:text-maroon">
+              {anomalies.filter(a => !a.resolved).every(a => selectedAnomalies.has(a.id)) && anomalies.filter(a => !a.resolved).length > 0 ? <CheckSquare className="w-4 h-4 text-maroon" /> : <Square className="w-4 h-4" />}
+            </button>
             <ShieldAlert className="w-4 h-4 text-amber-600" />
             <h3 className="text-xs font-extrabold tracking-widest uppercase text-amber-700">Reconciliation Anomalies</h3>
-            <span className="ml-auto text-[11px] text-text-muted">{anomalies.length} open</span>
+            <span className="text-[11px] text-text-muted">{anomalies.filter(a => !a.resolved).length} open · {anomalies.length} total</span>
+            <div className="ml-auto flex items-center gap-2">
+              {selectedAnomalies.size > 0 && (
+                <button onClick={bulkResolve} disabled={resolving} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold disabled:opacity-50">
+                  {resolving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />} Resolve {selectedAnomalies.size}
+                </button>
+              )}
+              <span className="text-[11px] text-text-muted hidden sm:inline">Bulk-resolve after manual review – {selectedAnomalies.size} selected</span>
+            </div>
           </div>
           <div className="divide-y divide-border">
             {anomalies.map(a => (
-              <div key={a.id} className="px-6 py-3 flex items-start justify-between gap-4">
-                <div>
+              <div key={a.id} className={`px-6 py-3 flex items-start gap-3 ${selectedAnomalies.has(a.id) ? 'bg-amber-50/50' : ''}`}>
+                {!a.resolved && (
+                  <button onClick={() => toggleAnomaly(a.id)} className="mt-0.5 text-text-muted hover:text-maroon">
+                    {selectedAnomalies.has(a.id) ? <CheckSquare className="w-4 h-4 text-maroon" /> : <Square className="w-4 h-4" />}
+                  </button>
+                )}
+                <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold text-text-primary">{a.code} <span className="font-normal text-text-muted">· {a.severity}</span></div>
                   <div className="text-xs text-text-secondary mt-1 line-clamp-2">{a.detail || a.message || ''}</div>
                   <div className="text-[11px] text-text-muted mt-1">{a.createdAt ? new Date(a.createdAt).toLocaleString('en-IN') : ''} {a.orderId ? `· order #${a.orderId}` : ''}</div>
                 </div>
-                <span className={`shrink-0 inline-flex px-2 py-1 rounded-full text-[10px] font-bold border ${a.resolved ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{a.resolved ? 'RESOLVED' : 'OPEN'}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold border ${a.resolved ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{a.resolved ? 'RESOLVED' : 'OPEN'}</span>
+                  {!a.resolved && (
+                    <button onClick={() => resolveOne(a.id)} className="px-2.5 py-1 bg-white border border-border hover:bg-green-50 hover:border-green-200 text-green-700 rounded-lg text-xs font-bold">Resolve</button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
+          {/* Mobile: same cards already responsive via flex */}
         </div>
       )}
 
