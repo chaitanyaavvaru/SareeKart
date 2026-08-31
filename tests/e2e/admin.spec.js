@@ -26,8 +26,8 @@ test.describe('SareeKart Admin – Coupons & Refunds Phase 12', () => {
   test('Admin refunds page renders with KPIs and filters', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('http://localhost:5173/admin/refunds');
-    const refundHeading = page.getByText(/Refund Management/i);
-    const loginHeading = page.getByText(/Sign In/i);
+    const refundHeading = page.getByRole('heading', { name: /Refund Management/i });
+    const loginHeading = page.getByRole('heading', { name: /Sign In/i });
     await expect(refundHeading.or(loginHeading)).toBeVisible({ timeout: 8000 });
     if (await refundHeading.isVisible().catch(() => false)) {
       await expect(page.getByText(/Total.*Pending.*Refunded/i).first().or(page.getByText(/Pending/))).toBeVisible({ timeout: 5000 }).catch(() => {});

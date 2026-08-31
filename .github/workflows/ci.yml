@@ -69,7 +69,12 @@ jobs:
           docker compose up -d mysql
           cd backend/backend && ./mvnw -q spring-boot:run -Dspring-boot.run.arguments="--app.razorpay.enabled=false" &
           cd /home/runner/work/SareeKart/SareeKart/frontend/frontend && npx serve -s dist -l 5173 &
-          sleep 45
+          sleep 60
+          # Wait for backend health
+          for i in {1..30}; do
+            if curl -s http://localhost:8081/api/health | grep -q UP; then break; fi
+            sleep 2
+          done
           npm install @playwright/test --save-dev
           npm list @playwright/test
           npx playwright test --reporter=list
