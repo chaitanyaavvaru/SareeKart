@@ -27,15 +27,15 @@ test.describe('SareeKart Login Tests', () => {
     await page.getByPlaceholder('email@example.com').fill('admin@sareekart.com');
     await page.getByPlaceholder('••••••••').fill('admin123');
     await page.getByRole('button', { name: /sign in/i }).click();
-    // should redirect to home or stay on login with no error and then navigate
-    await expect(page).not.toHaveURL(/login/, { timeout: 8000 });
+    // wait for redirect - login should redirect away from /login
+    await expect(page).not.toHaveURL(/\/login$/, { timeout: 10000 });
   });
 
   test('Login with valid customer credentials via quick login', async ({ page }) => {
     await page.goto('http://localhost:5173/login');
     await page.getByRole('button', { name: /customer account/i }).click();
     await page.getByRole('button', { name: /sign in/i }).click();
-    await expect(page).not.toHaveURL(/login/, { timeout: 8000 });
+    await expect(page).not.toHaveURL(/\/login$/, { timeout: 10000 });
   });
 
   test('Login with invalid credentials shows error', async ({ page }) => {

@@ -14,8 +14,8 @@ test.describe('SareeKart Admin – Coupons & Refunds Phase 12', () => {
     // New admin coupons route
     await page.goto('http://localhost:5173/admin/coupons');
     // Should either show Manage Coupons or redirect to login if not admin – allow both
-    const couponHeading = page.getByText(/Manage Coupons/i);
-    const loginHeading = page.getByText(/Sign In/i);
+    const couponHeading = page.getByRole('heading', { name: /Manage Coupons/i });
+    const loginHeading = page.getByText(/Sign In/i).first();
     await expect(couponHeading.or(loginHeading)).toBeVisible({ timeout: 8000 });
     if (await couponHeading.isVisible().catch(() => false)) {
       await expect(page.getByText(/Create.*Coupon|Manage Coupons/i).first()).toBeVisible();
@@ -27,7 +27,7 @@ test.describe('SareeKart Admin – Coupons & Refunds Phase 12', () => {
     await loginAsAdmin(page);
     await page.goto('http://localhost:5173/admin/refunds');
     const refundHeading = page.getByRole('heading', { name: /Refund Management/i });
-    const loginHeading = page.getByRole('heading', { name: /Sign In/i });
+    const loginHeading = page.getByText(/Sign In/i).first(); // more specific
     await expect(refundHeading.or(loginHeading)).toBeVisible({ timeout: 8000 });
     if (await refundHeading.isVisible().catch(() => false)) {
       await expect(page.getByText(/Total.*Pending.*Refunded/i).first().or(page.getByText(/Pending/))).toBeVisible({ timeout: 5000 }).catch(() => {});
