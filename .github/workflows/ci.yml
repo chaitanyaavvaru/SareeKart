@@ -75,6 +75,11 @@ jobs:
             if curl -s http://localhost:8081/api/health | grep -q UP; then break; fi
             sleep 2
           done
+          # Wait for frontend server
+          for i in {1..30}; do
+            if curl -s http://localhost:5173/ | grep -q SareeKart; then break; fi
+            sleep 2
+          done
           npm install @playwright/test --save-dev
           npm list @playwright/test
           npx playwright test --reporter=list
