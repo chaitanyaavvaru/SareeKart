@@ -70,6 +70,8 @@ jobs:
           cd backend/backend && ./mvnw -q spring-boot:run -Dspring-boot.run.arguments="--app.razorpay.enabled=false" &
           cd /home/runner/work/SareeKart/SareeKart/frontend/frontend && npx serve -s dist -l 5173 &
           sleep 45
+          npm install @playwright/test --save-dev
+          npm list @playwright/test
           npx playwright test --reporter=list
         env:
           SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3307/sareekart?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
