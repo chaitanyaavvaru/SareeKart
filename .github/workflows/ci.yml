@@ -68,8 +68,8 @@ jobs:
         run: |
           docker compose up -d mysql
           cd backend/backend && ./mvnw -q spring-boot:run -Dspring-boot.run.arguments="--app.razorpay.enabled=false" &
-          sleep 40
-          npm install @playwright/test
+          cd /home/runner/work/SareeKart/SareeKart/frontend/frontend && npx serve -s dist -l 5173 &
+          sleep 45
           npx playwright test --reporter=list
         env:
           SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3307/sareekart?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
