@@ -65,7 +65,7 @@ jobs:
       - name: E2E
         run: |
           docker compose up -d mysql
-          ./backend/backend/mvnw -q spring-boot:run -Dspring-boot.run.arguments="--app.razorpay.enabled=false" &
+          cd backend/backend && ./mvnw -q spring-boot:run -Dspring-boot.run.arguments="--app.razorpay.enabled=false" &
           sleep 40
           npx playwright test --reporter=list
         env:
