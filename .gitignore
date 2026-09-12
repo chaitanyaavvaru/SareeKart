@@ -1,0 +1,24 @@
+# Env
+.env
+.backend.pid
+.frontend.pid
+
+# Deps
+node_modules/
+frontend/node_modules/
+backend/backend/target/
+*.log
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+frontend/dist/
+
+# Playwright
+test-results/
+playwright-report/

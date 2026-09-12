@@ -1,0 +1,54 @@
+# SareeKart Brand Redesign Task Checklist
+
+- `[x]` **Phase 1 — Sticky Main Navigation & Hero**
+  - `[x]` Refactor `Navbar.jsx` (Top announcement bar height 40px with dividers, Main Nav height 88px, search/wishlist/profile dropdowns, scrolled bg transition)
+- `[x]` **Phase 2 — Featured Sarees & Master Artisans**
+  - `[x]` Refactor `HomePage.jsx` Featured section (Height 950px, bg `#F8F4EE`, title "Handpicked For You", five cards width 280px/height 520px/image 380px)
+  - `[x]` Refactor `MeetArtisans.jsx` (Height 900px, dark burgundy background `#3A0F1F`, story left, right 3 overlapping 620px tall portraits)
+- `[x]` **Phase 3 — Born of Masterpiece & Side-by-Side Banners**
+  - `[x]` Refactor `HandloomTimeline.jsx` (Height 820px, warm ivory `#FAF8F5`, horizontal timeline steps reveal)
+  - `[x]` Redesign HeritageStory.jsx to Left (60% width) / Right (40% width) and stretch statistics
+  - `[x]` Align Featured Sarees top/bottom spacing on HomePage.jsx
+  - `[x]` Add highlights & features to WeddingCollection.jsx (The Golden Muhurtham)
+  - `[x]` Modify Featured section limits and text labels in HomePage.jsx
+  - `[x]` Rebuild MyOrders.jsx with the new luxury client lounge layout (Hero, Stats, Cards, Timeline, Support Cards)
+  - `[x]` Redesign ProductGrid.jsx grid structure and card height metrics
+  - `[x]` Verify build and compile outcomes
+  - `[x]` Add quote & scale image on CelebritySection.jsx
+  - `[x]` Rebuild benefits list into 4 cards in Newsletter.jsx
+  - `[x]` Refactor `Newsletter.jsx` (Height 600px, split layout: left signup and benefits circle, right fabric close-up with burgundy overlay)
+  - `[x]` Refactor `common/AddressChangeBanner.jsx` (Height 600px, palace backdrop, manage address CTA, aligned directly side-by-side with Newsletter)
+- `[x]` **Phase 4 — Footer Redesign & Main Integration**
+  - `[x]` Refactor `Footer.jsx` (Warm Ivory bg, thin grey line top divider, 5 navigation columns SHOP/CONTACT/SUPPORT/USER POLICY/STORE, bottom area, legal copyright bar)
+  - `[x]` Clean home layouts wrapping and run Vite build check
+  - `[x]` Run production build & verify dev server compiles cleanly
+- `[x]` **SareeKart Homepage Grid Refinement Progress**
+
+  - `[x]` Align Section 1 (`SignatureCollections.jsx`): Container width (`max-w-[1640px] px-[80px] mx-auto`) and vertical padding spacing (`py-[120px]`)
+  - `[x]` Align Section 2 (`CategorySection.jsx`): Left-align category title and description block, set container size (`max-w-[1640px] px-[80px] mx-auto`), and card alignment
+  - `[x]` Align Section 3 (Featured Sarees in `HomePage.jsx`): Container size (`max-w-[1640px] px-[80px] mx-auto`), vertical spacing (`py-[120px]`), and card spacing
+  - `[x]` Align Section 4 (`NewArrivals.jsx`): Redesign to editorial block, set small label to `NEW ARRIVALS`, primary button to `Explore New Collection`, and container width (`max-w-[1640px] px-[80px] mx-auto`)
+  - `[x]` Align Section 5 (Newsletter in `HomePage.jsx`): Container size (`max-w-[1640px] px-[80px] mx-auto`) and vertical padding spacing (`py-[120px]`)
+  - `[x]` Align other homepage components:
+    - `[x]` `HeritageStory.jsx` container size (`max-w-[1640px] px-[80px] mx-auto`) and vertical padding (`py-[120px]`)
+    - `[x]` `WeddingCollection.jsx` container size (`max-w-[1640px] px-[80px] mx-auto`) and vertical padding (`py-[120px]`)
+    - `[x]` `CelebritySection.jsx` container size (`max-w-[1640px] px-[80px] mx-auto`) and vertical padding (`py-[120px]`)
+    - `[x]` `MeetArtisans.jsx` container size (`max-w-[1640px] px-[80px] mx-auto`)
+    - `[x]` `HandloomTimeline.jsx` container size (`max-w-[1640px] px-[80px] mx-auto`)
+  - `[x]` Run Vite production build check to ensure clean compilation
+  - `[x]` Manually verify visual header alignments and card layouts on all breakpointsitions, and accordion drawers on all screen breakpoints
+
+- `[x]` **SareeKart Header & Footer Redesign Progress**
+  - `[x]` Redesign `OfferBar.jsx` (Announcement Bar: 40px height, deep burgundy `#3A0F1F`, gold text, centered items with vertical line spacers)
+  - `[x]` Refine `Navbar.jsx` (88px height, sticky scroll physics, glass backdrop blur, scroll background transformations)
+  - `[x]` Center SareeKart Logo & Tagline on absolute baseline
+  - `[x]` Configure Left section (Country Selector, Currency, Wishlist link spaced 24px)
+  - `[x]` Configure Right section menu bar items and gold hover underline animations
+  - `[x]` Build Framer Motion hover dropdowns for Collections, Kanchipuram, Region, Fabric, Occasions
+  - `[x]` Build Mobile Drawer Menu overlay
+  - `[x]` Redesign `Footer.jsx` (Deep Burgundy theme with silk pattern, min-height 520px, top padding 100px, bottom 60px)
+  - `[x]` Columns layout: Column 1 (socials & story), Column 2 (Collections), Column 3 (Care), Column 4 (Company), Column 5 (Visits & gold maps CTA button)
+  - `[x]` Build Bottom Footer (gold divider, copyright, legal links, gold italic tagline)
+  - `[x]` Build Mobile Accordion columns collapse in `Footer.jsx`
+  - `[x]` Run Vite production build check to ensure clean compilation
+  - `[x]` Manually verify sticky navigation, dropdown transitions, and accordion drawers on all screen breakpoints

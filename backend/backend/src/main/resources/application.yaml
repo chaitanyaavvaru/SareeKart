@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: sareekart
+
+  devtools:
+    restart:
+      exclude: "org/apache/pdfbox/**,org/apache/fontbox/**"
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/sareekart_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+
+server:
+  port: 8081
+
+# JWT Configuration (for Phase 3)
+jwt:
+  secret: SareeKartSecretKey2024ForJWTTokenGenerationAndValidation
+  expiration: 86400000
+
+logging:
+  level:
+    com.sareekart: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+
+razorpay:
+  key:
+    # Set these in the environment. Never commit Razorpay credentials here.
+    id: ${RAZORPAY_KEY_ID:}
+    secret: ${RAZORPAY_KEY_SECRET:}
+
+whatsapp:
+  api:
+    token: "dummy_whatsapp_token"
+    phone-number-id: "dummy_phone_id"
+  webhook:
+    verify-token: "sareekart-verify-token"
+
+spring.ai.openai.api-key: "sk-proj-dummy-key"

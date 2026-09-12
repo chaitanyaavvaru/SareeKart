@@ -1,0 +1,184 @@
+--- a/frontend/src/pages/Admin/ManageInventory.jsx
++++ b/frontend/src/pages/Admin/ManageInventory.jsx
+@@ -73,6 +73,8 @@
+   const [transferSku, setTransferSku] = useState('SK-KANCHI-GOLD-01');
+   const [sourceWarehouse, setSourceWarehouse] = useState('WH-01 Bengaluru Central Fulfillment Hub');
+   const [targetWarehouse, setTargetWarehouse] = useState('WH-02 Mumbai West Distribution Hub');
++  const [transferQty, setTransferQty] = useState(5);
++  const [transferReason, setTransferReason] = useState('');
+   const { user } = useSelector((state) => state.auth);
+   const [showOfflineModal, setShowOfflineModal] = useState(false);
+   const [offlineTab, setOfflineTab] = useState('photos'); // 'photos' | 'excel'
+--- a/frontend/src/components/common/AiAssistantModal.jsx
++++ b/frontend/src/components/common/AiAssistantModal.jsx
+@@ -40,20 +40,6 @@
+   useEffect(() => {
+     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+   }, [messages, isTyping]);
+-
+-  useEffect(() => {
+-    const handleOpenWithPrompt = (e) => {
+-      setIsOpen(true);
+-      if (e.detail?.prompt) {
+-        // Small delay to ensure modal mounts before sending message
+-        setTimeout(() => {
+-          handleSendMessage(e.detail.prompt);
+-        }, 150);
+-      }
+-    };
+-    window.addEventListener('sareekart:open-ai-stylist', handleOpenWithPrompt);
+-    return () => window.removeEventListener('sareekart:open-ai-stylist', handleOpenWithPrompt);
+-  }, []);
+ 
+   const handleSendMessage = async (textToSend) => {
+     const query = textToSend || inputQuery.trim();
+@@ -90,6 +76,23 @@
+       setIsTyping(false);
+     }
+   };
++
++  const handleSendMessageRef = useRef(null);
++  handleSendMessageRef.current = handleSendMessage;
++
++  useEffect(() => {
++    const handleOpenWithPrompt = (e) => {
++      setIsOpen(true);
++      if (e.detail?.prompt) {
++        // Small delay to ensure modal mounts before sending message
++        setTimeout(() => {
++          handleSendMessageRef.current?.(e.detail.prompt);
++        }, 150);
++      }
++    };
++    window.addEventListener('sareekart:open-ai-stylist', handleOpenWithPrompt);
++    return () => window.removeEventListener('sareekart:open-ai-stylist', handleOpenWithPrompt);
++  }, []);
+ 
+   const handleBookProduct = (product) => {
+     dispatch(addToCart(product));
+--- a/frontend/src/pages/Admin/AnalyticsDashboard.jsx
++++ b/frontend/src/pages/Admin/AnalyticsDashboard.jsx
+@@ -286,21 +286,23 @@
+ 
+   // Calculate donut segments
+   let cumulativeAngle = 0;
+-  const segments = distribution.map((item, idx) => {
++  const segments = [];
++  for (let idx = 0; idx < distribution.length; idx++) {
++    const item = distribution[idx];
+     const amount = Number(item.amount) || 0;
+     const fraction = totalAmount > 0 ? amount / totalAmount : 0;
+     const angle = fraction * 360;
+     const startAngle = cumulativeAngle;
+     cumulativeAngle += angle;
+ 
+-    return {
++    segments.push({
+       ...item,
+       color: colors[idx % colors.length],
+       fraction,
+       startAngle,
+       angle,
+-    };
+-  });
++    });
++  }
+ 
+   return (
+     <div className="flex flex-col sm:flex-row items-center gap-6">
+--- a/frontend/src/pages/Orders/TrackOrderPage.jsx
++++ b/frontend/src/pages/Orders/TrackOrderPage.jsx
+@@ -97,24 +97,6 @@
+   const [copied, setCopied] = useState(false);
+   const [showFaq, setShowFaq] = useState(false);
+ 
+-  // Auto-search if URL parameters are provided
+-  useEffect(() => {
+-    const urlOrder = searchParams.get('orderId') || params.id;
+-    const urlAwb = searchParams.get('awb');
+-    const urlContact = searchParams.get('contact');
+-
+-    if (urlAwb) {
+-      setActiveTab('awb');
+-      setAwbInput(urlAwb);
+-      fetchTrackingData({ trackingNumber: urlAwb });
+-    } else if (urlOrder) {
+-      setActiveTab('orderId');
+-      setOrderInput(urlOrder);
+-      if (urlContact) setContactInput(urlContact);
+-      fetchTrackingData({ orderId: urlOrder.replace(/\D/g, ''), contact: urlContact });
+-    }
+-  }, [searchParams, params]);
+-
+   const fetchTrackingData = async (paramsObj) => {
+     setLoading(true);
+     setError(null);
+@@ -142,6 +124,25 @@
+       setLoading(false);
+     }
+   };
++
++  // Auto-search if URL parameters are provided
++  useEffect(() => {
++    const urlOrder = searchParams.get('orderId') || params.id;
++    const urlAwb = searchParams.get('awb');
++    const urlContact = searchParams.get('contact');
++
++    if (urlAwb) {
++      setActiveTab('awb');
++      setAwbInput(urlAwb);
++      fetchTrackingData({ trackingNumber: urlAwb });
++    } else if (urlOrder) {
++      setActiveTab('orderId');
++      setOrderInput(urlOrder);
++      if (urlContact) setContactInput(urlContact);
++      fetchTrackingData({ orderId: urlOrder.replace(/\D/g, ''), contact: urlContact });
++    }
++  }, [searchParams, params]);
++
+ 
+   const handleSearch = (e) => {
+     e.preventDefault();
+--- a/frontend/src/pages/ProductDetails/ProductDetailPage.jsx
++++ b/frontend/src/pages/ProductDetails/ProductDetailPage.jsx
+@@ -171,8 +171,8 @@
+     }
+ 
+     const firstDigit = cleanPin[0];
+-    let days = 3;
+-    let locationLabel = 'Standard Delivery';
++    let days;
++    let locationLabel;
+     if (['5', '6'].includes(firstDigit)) {
+       days = 2;
+       locationLabel = 'Express South Zone';
+--- a/frontend/src/services/invoiceService.js
++++ b/frontend/src/services/invoiceService.js
+@@ -15,7 +15,7 @@
+     });
+ 
+     const disposition = response.headers['content-disposition'] || '';
+-    const fileNameMatch = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^;\"]+)"?/i);
++    const fileNameMatch = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^;"]+)"?/i);
+     const ext = format.toLowerCase() === 'excel' || format.toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf';
+     const fileName = fileNameMatch
+       ? decodeURIComponent(fileNameMatch[1] || fileNameMatch[2])
+@@ -37,6 +37,6 @@
+     setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+   } catch (err) {
+     console.error('Invoice download failed:', err);
+-    throw new Error(err.response?.data?.message || err.message || 'Could not download invoice');
++    throw new Error(err.response?.data?.message || err.message || 'Could not download invoice', { cause: err });
+   }
+ }
+--- a/frontend/tests/cross-browser-booking.spec.js
++++ b/frontend/tests/cross-browser-booking.spec.js
+@@ -5,7 +5,7 @@
+   test.setTimeout(120000);
+ 
+   test('Book saree in Google Chrome, verify booking in Safari and Brave Browser', async () => {
+-    let bookedOrderId = null;
++    let bookedOrderId;
+     const baseURL = 'http://localhost:5173';
+ 
+     // =========================================================================

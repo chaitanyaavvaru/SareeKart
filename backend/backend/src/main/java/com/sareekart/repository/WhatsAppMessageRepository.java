@@ -1,0 +1,13 @@
+package com.sareekart.repository;
+
+import com.sareekart.entity.WhatsAppMessage;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface WhatsAppMessageRepository extends JpaRepository<WhatsAppMessage, Long> {
+    List<WhatsAppMessage> findByConversationIdOrderByTimestampAsc(Long conversationId);
+    WhatsAppMessage findByWamId(String wamId);
+}

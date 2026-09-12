@@ -1,0 +1,17 @@
+{
+  "short_name": "SareeKart",
+  "name": "SareeKart - Luxury Handloom Sarees",
+  "description": "Directly from Master Weavers to your Wardrobe. Imperial Kanchipuram, Banarasi Zari & Paithani Silk Sarees.",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FAF8F5",
+  "theme_color": "#3A0F1F",
+  "display": "standalone",
+  "orientation": "portrait"
+}
