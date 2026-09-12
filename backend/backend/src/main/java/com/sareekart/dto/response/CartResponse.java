@@ -18,4 +18,8 @@ public class CartResponse {
     private Long userId;
     private List<CartItemResponse> items;
     private BigDecimal totalPrice;
+
+    // Phase 4 Summary Indicators
+    private Integer totalItems;
+    private Boolean hasStockIssues;
 }

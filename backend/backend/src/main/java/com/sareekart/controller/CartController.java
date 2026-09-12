@@ -1,6 +1,7 @@
 package com.sareekart.controller;
 
 import com.sareekart.dto.request.CartItemRequest;
+import com.sareekart.dto.request.CartMergeRequest;
 import com.sareekart.dto.response.ApiResponse;
 import com.sareekart.dto.response.CartResponse;
 import com.sareekart.entity.User;
@@ -54,5 +55,13 @@ public class CartController {
     public ResponseEntity<ApiResponse<Void>> clearCart(@AuthenticationPrincipal User user) {
         cartService.clearCart(user.getId());
         return ResponseEntity.ok(ApiResponse.success("Cart cleared", null));
+    }
+
+    @PostMapping("/merge")
+    public ResponseEntity<ApiResponse<CartResponse>> mergeGuestCart(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody CartMergeRequest request) {
+        CartResponse cart = cartService.mergeGuestCart(user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Guest cart merged successfully", cart));
     }
 }

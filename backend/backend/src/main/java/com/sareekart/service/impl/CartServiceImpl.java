@@ -1,13 +1,15 @@
 package com.sareekart.service.impl;
 
+import com.sareekart.config.CartConstants;
 import com.sareekart.dto.request.CartItemRequest;
+import com.sareekart.dto.request.CartMergeRequest;
 import com.sareekart.dto.response.CartResponse;
 import com.sareekart.entity.Cart;
 import com.sareekart.entity.CartItem;
 import com.sareekart.entity.Product;
 import com.sareekart.entity.User;
-import com.sareekart.exception.ResourceNotFoundException;
 import com.sareekart.exception.BadRequestException;
+import com.sareekart.exception.ResourceNotFoundException;
 import com.sareekart.mapper.CartMapper;
 import com.sareekart.repository.CartRepository;
 import com.sareekart.repository.ProductRepository;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
@@ -37,12 +40,21 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartResponse addItemToCart(Long userId, CartItemRequest request) {
+        if (request.getQuantity() == null || request.getQuantity() < 1) {
+            throw new BadRequestException("Quantity must be at least 1.");
+        }
+
+        if (request.getQuantity() > CartConstants.MAX_QUANTITY_PER_SKU) {
+            throw new BadRequestException("Maximum " + CartConstants.MAX_QUANTITY_PER_SKU + " units allowed per saree SKU.");
+        }
+
         Cart cart = getOrCreateCart(userId);
         Product product = productRepository.findByIdAndActiveTrue(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", request.getProductId()));
 
-        if (request.getQuantity() > product.getStockQuantity()) {
-            throw new BadRequestException("Only " + product.getStockQuantity() + " units are available.");
+        int availableStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+        if (availableStock <= 0) {
+            throw new BadRequestException("Product is out of stock: " + product.getName());
         }
 
         Optional<CartItem> existingItem = cart.getItems().stream()
@@ -52,11 +64,17 @@ public class CartServiceImpl implements CartService {
         if (existingItem.isPresent()) {
             CartItem item = existingItem.get();
             int requestedQuantity = item.getQuantity() + request.getQuantity();
-            if (requestedQuantity > product.getStockQuantity()) {
-                throw new BadRequestException("Only " + product.getStockQuantity() + " units are available.");
+            if (requestedQuantity > CartConstants.MAX_QUANTITY_PER_SKU) {
+                throw new BadRequestException("Maximum " + CartConstants.MAX_QUANTITY_PER_SKU + " units allowed per saree SKU.");
+            }
+            if (requestedQuantity > availableStock) {
+                throw new BadRequestException("Only " + availableStock + " units are available.");
             }
             item.setQuantity(requestedQuantity);
         } else {
+            if (request.getQuantity() > availableStock) {
+                throw new BadRequestException("Only " + availableStock + " units are available.");
+            }
             CartItem newItem = CartItem.builder()
                     .cart(cart)
                     .product(product)
@@ -71,8 +89,17 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartResponse updateItemQuantity(Long userId, Long productId, Integer quantity) {
-        if (quantity == null || quantity < 1) {
-            throw new BadRequestException("Quantity must be at least 1.");
+        if (quantity == null || quantity < 0) {
+            throw new BadRequestException("Quantity cannot be negative.");
+        }
+
+        // Setting quantity to 0 removes the item
+        if (quantity == 0) {
+            return removeItemFromCart(userId, productId);
+        }
+
+        if (quantity > CartConstants.MAX_QUANTITY_PER_SKU) {
+            throw new BadRequestException("Maximum " + CartConstants.MAX_QUANTITY_PER_SKU + " units allowed per saree SKU.");
         }
 
         Cart cart = getOrCreateCart(userId);
@@ -85,8 +112,10 @@ public class CartServiceImpl implements CartService {
         if (!Boolean.TRUE.equals(cartItem.getProduct().getActive())) {
             throw new BadRequestException("This product is no longer available.");
         }
-        if (quantity > cartItem.getProduct().getStockQuantity()) {
-            throw new BadRequestException("Only " + cartItem.getProduct().getStockQuantity() + " units are available.");
+
+        int availableStock = cartItem.getProduct().getStockQuantity() != null ? cartItem.getProduct().getStockQuantity() : 0;
+        if (quantity > availableStock) {
+            throw new BadRequestException("Only " + availableStock + " units are available.");
         }
 
         cartItem.setQuantity(quantity);
@@ -114,6 +143,61 @@ public class CartServiceImpl implements CartService {
         cartRepository.save(cart);
     }
 
+    @Override
+    public CartResponse mergeGuestCart(Long userId, CartMergeRequest request) {
+        Cart cart = getOrCreateCart(userId);
+
+        if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
+            return cartMapper.toResponse(cart);
+        }
+
+        for (CartItemRequest guestItem : request.getItems()) {
+            if (guestItem.getProductId() == null || guestItem.getQuantity() == null || guestItem.getQuantity() <= 0) {
+                continue;
+            }
+
+            Optional<Product> productOpt = productRepository.findById(guestItem.getProductId());
+            if (productOpt.isEmpty()) {
+                continue;
+            }
+
+            Product product = productOpt.get();
+            if (!Boolean.TRUE.equals(product.getActive())) {
+                continue;
+            }
+
+            int availableStock = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
+            if (availableStock <= 0) {
+                continue;
+            }
+
+            Optional<CartItem> existingItemOpt = cart.getItems().stream()
+                    .filter(item -> item.getProduct().getId().equals(product.getId()))
+                    .findFirst();
+
+            if (existingItemOpt.isPresent()) {
+                CartItem existing = existingItemOpt.get();
+                // Merge rule: sum quantities, capped at available stock and MAX_QUANTITY_PER_SKU
+                int combinedQty = existing.getQuantity() + guestItem.getQuantity();
+                int finalQty = Math.min(combinedQty, Math.min(availableStock, CartConstants.MAX_QUANTITY_PER_SKU));
+                existing.setQuantity(Math.max(1, finalQty));
+            } else {
+                int initialQty = Math.min(guestItem.getQuantity(), Math.min(availableStock, CartConstants.MAX_QUANTITY_PER_SKU));
+                if (initialQty > 0) {
+                    CartItem newItem = CartItem.builder()
+                            .cart(cart)
+                            .product(product)
+                            .quantity(initialQty)
+                            .build();
+                    cart.getItems().add(newItem);
+                }
+            }
+        }
+
+        Cart savedCart = cartRepository.save(cart);
+        return cartMapper.toResponse(savedCart);
+    }
+
     private Cart getOrCreateCart(Long userId) {
         return cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
@@ -121,6 +205,7 @@ public class CartServiceImpl implements CartService {
                             .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
                     Cart newCart = Cart.builder()
                             .user(user)
+                            .items(new ArrayList<>())
                             .build();
                     return cartRepository.save(newCart);
                 });

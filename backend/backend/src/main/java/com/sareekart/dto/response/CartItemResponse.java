@@ -20,4 +20,10 @@ public class CartItemResponse {
     private BigDecimal price;
     private Integer quantity;
     private BigDecimal totalPrice;
+
+    // Phase 4 Live Stock & Availability Telemetry
+    private Integer availableStock;
+    private Boolean isActive;
+    private Boolean isOutOfStock;
+    private Boolean quantityExceedsStock;
 }

@@ -20,6 +20,7 @@ const HeritageWeavesPage = lazy(() => import('../pages/Heritage/HeritageWeavesPa
 const SareeCarePage = lazy(() => import('../pages/Care/SareeCarePage'));
 const TrousseauPlannerPage = lazy(() => import('../pages/Bridal/TrousseauPlannerPage'));
 const StylistStudioPage = lazy(() => import('../pages/Stylist/StylistStudioPage'));
+const CartPage = lazy(() => import('../pages/Cart'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('../pages/Admin/AdminDashboard'));
@@ -76,6 +77,7 @@ export default function AppRouter() {
         <Route path="products/:id" element={<ProductDetailPage />} />
         <Route path="artisans" element={<ArtisansPage />} />
         <Route path="wishlist" element={<WishlistPage />} />
+        <Route path="cart" element={<CartPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />

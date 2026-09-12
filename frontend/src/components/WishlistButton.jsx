@@ -1,46 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Heart } from 'lucide-react';
-import api from '../api/axiosConfig';
-
+import wishlistService from '../services/wishlistService';
+import { getGuestWishlist, saveGuestWishlist } from '../utils/guestCart';
 import { motion } from 'framer-motion';
 
 export default function WishlistButton({ productId, initialWishlisted = false, onToggleSuccess }) {
-  const { user } = useSelector(state => state.auth);
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const [isWishlisted, setIsWishlisted] = useState(initialWishlisted);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setIsWishlisted(initialWishlisted);
-  }, [initialWishlisted]);
+    if (isAuthenticated) {
+      setIsWishlisted(initialWishlisted);
+    } else {
+      const guestList = getGuestWishlist();
+      const exists = guestList.some((id) => (typeof id === 'object' ? id.id === productId : id === productId));
+      setIsWishlisted(exists);
+    }
+  }, [initialWishlisted, isAuthenticated, productId]);
 
   const handleToggle = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) {
-      alert("Please login to manage your wishlist.");
+
+    if (!isAuthenticated) {
+      // Guest mode
+      const guestList = getGuestWishlist();
+      let updated;
+      if (isWishlisted) {
+        updated = guestList.filter((id) => (typeof id === 'object' ? id.id !== productId : id !== productId));
+        setIsWishlisted(false);
+        onToggleSuccess?.(productId, false);
+      } else {
+        updated = [...guestList, productId];
+        setIsWishlisted(true);
+        onToggleSuccess?.(productId, true);
+      }
+      saveGuestWishlist(updated);
+      window.dispatchEvent(new Event('wishlist-updated'));
       return;
     }
+
     try {
       setLoading(true);
       if (isWishlisted) {
-        await api.delete(`/wishlist/${productId}`);
+        await wishlistService.removeFromWishlist(productId);
         setIsWishlisted(false);
-        if (onToggleSuccess) onToggleSuccess(productId, false);
+        onToggleSuccess?.(productId, false);
       } else {
-        await api.post(`/wishlist/${productId}`);
+        await wishlistService.addToWishlist(productId);
         setIsWishlisted(true);
-        if (onToggleSuccess) onToggleSuccess(productId, true);
+        onToggleSuccess?.(productId, true);
       }
+      window.dispatchEvent(new Event('wishlist-updated'));
     } catch (err) {
-      console.error("Failed to toggle wishlist", err);
+      console.error('Failed to toggle wishlist:', err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <motion.button 
+    <motion.button
       onClick={handleToggle}
       disabled={loading}
       whileHover={{ scale: 1.1 }}
@@ -48,7 +70,13 @@ export default function WishlistButton({ productId, initialWishlisted = false, o
       className="z-10 cursor-pointer rounded-full border border-white/70 bg-white/90 p-2 text-[#71817A] shadow-md transition-colors hover:bg-white hover:text-[#B84F49]"
       aria-label="Wishlist"
     >
-      <Heart className={`h-4 w-4 transition-colors ${isWishlisted ? "fill-[#B84F49] text-[#B84F49]" : "text-[#71817A] hover:text-[#B84F49]"}`} />
+      <Heart
+        className={`h-4 w-4 transition-colors ${
+          isWishlisted
+            ? 'fill-[#B84F49] text-[#B84F49]'
+            : 'text-[#71817A] hover:text-[#B84F49]'
+        }`}
+      />
     </motion.button>
   );
 }

@@ -1,6 +1,7 @@
 package com.sareekart.service;
 
 import com.sareekart.dto.request.CartItemRequest;
+import com.sareekart.dto.request.CartMergeRequest;
 import com.sareekart.dto.response.CartResponse;
 
 public interface CartService {
@@ -14,4 +15,6 @@ public interface CartService {
     CartResponse removeItemFromCart(Long userId, Long productId);
 
     void clearCart(Long userId);
+
+    CartResponse mergeGuestCart(Long userId, CartMergeRequest request);
 }

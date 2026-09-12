@@ -2,10 +2,13 @@ package com.sareekart.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "wishlists", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"userId", "productId"})
+    @UniqueConstraint(columnNames = {"user_id", "product_id"})
 })
 @Getter
 @Setter
@@ -18,9 +21,13 @@ public class Wishlist {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
+    @Column(name = "product_id", nullable = false)
     private Long productId;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

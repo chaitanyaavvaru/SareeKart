@@ -1,22 +1,18 @@
 package com.sareekart.controller;
 
+import com.sareekart.dto.request.WishlistSyncRequest;
 import com.sareekart.dto.response.ApiResponse;
+import com.sareekart.dto.response.CartResponse;
 import com.sareekart.dto.response.ProductResponse;
-import com.sareekart.entity.Product;
 import com.sareekart.entity.User;
-import com.sareekart.entity.Wishlist;
-import com.sareekart.mapper.ProductMapper;
-import com.sareekart.repository.ProductRepository;
-import com.sareekart.repository.WishlistRepository;
+import com.sareekart.service.WishlistService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/wishlist")
@@ -24,78 +20,51 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WishlistController {
 
-    private final WishlistRepository wishlistRepository;
-    private final ProductRepository productRepository;
-    private final ProductMapper productMapper;
+    private final WishlistService wishlistService;
 
-    /**
-     * Retrieve all products in the authenticated user's wishlist.
-     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getWishlist(
             @AuthenticationPrincipal User user) {
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Authentication required", null));
-        }
-
-        List<Wishlist> entries = wishlistRepository.findByUserId(user.getId());
-        List<Long> productIds = entries.stream()
-                .map(Wishlist::getProductId)
-                .collect(Collectors.toList());
-
-        List<Product> products = productRepository.findAllById(productIds);
-        List<ProductResponse> responses = products.stream()
-                .map(productMapper::toResponse)
-                .collect(Collectors.toList());
-
+        List<ProductResponse> responses = wishlistService.getWishlist(user.getId());
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
-    /**
-     * Add a product to the user's wishlist.
-     */
+    @GetMapping("/count")
+    public ResponseEntity<ApiResponse<Long>> getWishlistCount(
+            @AuthenticationPrincipal User user) {
+        long count = wishlistService.getWishlistCount(user.getId());
+        return ResponseEntity.ok(ApiResponse.success(count));
+    }
+
     @PostMapping("/{productId}")
     public ResponseEntity<ApiResponse<Void>> addToWishlist(
             @PathVariable Long productId,
             @AuthenticationPrincipal User user) {
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Authentication required", null));
-        }
-
-        if (!productRepository.existsById(productId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error("Product not found", null));
-        }
-
-        Optional<Wishlist> existing = wishlistRepository.findByUserIdAndProductId(user.getId(), productId);
-        if (existing.isEmpty()) {
-            Wishlist entry = Wishlist.builder()
-                    .userId(user.getId())
-                    .productId(productId)
-                    .build();
-            wishlistRepository.save(entry);
-        }
-
+        wishlistService.addToWishlist(user.getId(), productId);
         return ResponseEntity.ok(ApiResponse.success("Added to wishlist", null));
     }
 
-    /**
-     * Remove a product from the user's wishlist.
-     */
     @DeleteMapping("/{productId}")
     public ResponseEntity<ApiResponse<Void>> removeFromWishlist(
             @PathVariable Long productId,
             @AuthenticationPrincipal User user) {
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Authentication required", null));
-        }
-
-        Optional<Wishlist> existing = wishlistRepository.findByUserIdAndProductId(user.getId(), productId);
-        existing.ifPresent(wishlistRepository::delete);
-
+        wishlistService.removeFromWishlist(user.getId(), productId);
         return ResponseEntity.ok(ApiResponse.success("Removed from wishlist", null));
+    }
+
+    @PostMapping("/move-to-cart/{productId}")
+    public ResponseEntity<ApiResponse<CartResponse>> moveWishlistToCart(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal User user) {
+        CartResponse cartResponse = wishlistService.moveWishlistToCart(user.getId(), productId);
+        return ResponseEntity.ok(ApiResponse.success("Saree moved to cart successfully", cartResponse));
+    }
+
+    @PostMapping("/sync")
+    public ResponseEntity<ApiResponse<Void>> syncGuestWishlist(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody WishlistSyncRequest request) {
+        wishlistService.syncGuestWishlist(user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Wishlist synchronized successfully", null));
     }
 }

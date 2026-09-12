@@ -11,6 +11,8 @@ import AnnouncementBar from './common/AnnouncementBar';
 import VideoShoppingModal from './video/VideoShoppingModal';
 import SilkMarkModal from './trust/SilkMarkModal';
 import NotificationBell from './common/NotificationBell';
+import wishlistService from '../services/wishlistService';
+import { getGuestWishlist } from '../utils/guestCart';
 
 const categoryMenus = [
   {
@@ -93,6 +95,33 @@ export default function Navbar() {
       window.removeEventListener('open-silk-mark', handleOpenSilk);
     };
   }, []);
+
+  const [wishlistCount, setWishlistCount] = useState(0);
+
+  useEffect(() => {
+    const updateCount = async () => {
+      if (isAuthenticated) {
+        try {
+          const res = await wishlistService.getWishlistCount();
+          if (res?.data !== undefined) {
+            setWishlistCount(Number(res.data));
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        const local = getGuestWishlist();
+        setWishlistCount(Array.isArray(local) ? local.length : 0);
+      }
+    };
+    updateCount();
+    window.addEventListener('wishlist-updated', updateCount);
+    window.addEventListener('storage', updateCount);
+    return () => {
+      window.removeEventListener('wishlist-updated', updateCount);
+      window.removeEventListener('storage', updateCount);
+    };
+  }, [isAuthenticated]);
 
   const profileLabel = useMemo(() => {
     if (!isAuthenticated) return 'Sign in';
@@ -194,8 +223,13 @@ export default function Navbar() {
             >
               <UserRound className="h-[18px] w-[18px]" />
             </Link>
-            <Link to="/wishlist" className="flex h-9 w-9 items-center justify-center transition hover:bg-[#F7F4EE] sm:h-10 sm:w-10" aria-label="Saved Wishlist">
+            <Link to="/wishlist" className="relative flex h-9 w-9 items-center justify-center transition hover:bg-[#F7F4EE] sm:h-10 sm:w-10" aria-label="Saved Wishlist">
               <Heart className="h-[19px] w-[19px]" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#1E6A62] px-1 text-[9px] font-bold text-white shadow-xs">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
             <NotificationBell />
             <CartButton />

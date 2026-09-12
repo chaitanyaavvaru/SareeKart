@@ -24,6 +24,7 @@ import SEO from '../../components/common/SEO';
 import walletService from '../../services/walletService';
 import logisticsService from '../../services/logisticsService';
 import whatsAppService from '../../services/whatsAppService';
+import cartService from '../../services/cartService';
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat('en-IN', {
@@ -157,13 +158,11 @@ export default function CheckoutPage() {
     const syncCartWithDatabase = async () => {
       try {
         setSyncError(null);
-        await api.delete('/cart');
-
-        for (const item of items) {
-          await api.post('/cart/items', {
-            productId: item.id,
-            quantity: item.qty,
-          });
+        // Atomically merge guest items into backend cart with capped summation and stock check
+        const mergeRes = await cartService.mergeGuestCart(items);
+        if (mergeRes.data?.hasStockIssues) {
+          setSyncError('Some items in your cart exceed available stock. Please adjust your cart before checking out.');
+          return;
         }
 
         if (lastSyncKeyRef.current === syncKey) {
