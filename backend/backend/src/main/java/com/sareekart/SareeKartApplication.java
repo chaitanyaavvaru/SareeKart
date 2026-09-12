@@ -4,8 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 @SpringBootApplication(exclude = {org.springframework.cloud.function.context.config.ContextFunctionCatalogAutoConfiguration.class})
 @EnableJpaAuditing
+@EnableScheduling
 public class SareeKartApplication {
     public static void main(String[] args) {
         SpringApplication.run(SareeKartApplication.class, args);

@@ -16,6 +16,7 @@ import com.sareekart.repository.ProductRepository;
 import com.sareekart.repository.UserRepository;
 import com.sareekart.service.CartService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +49,7 @@ public class CartServiceImpl implements CartService {
             throw new BadRequestException("Maximum " + CartConstants.MAX_QUANTITY_PER_SKU + " units allowed per saree SKU.");
         }
 
-        Cart cart = getOrCreateCart(userId);
+        Cart cart = getOrCreateCartForUpdate(userId);
         Product product = productRepository.findByIdAndActiveTrue(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "id", request.getProductId()));
 
@@ -83,8 +84,13 @@ public class CartServiceImpl implements CartService {
             cart.getItems().add(newItem);
         }
 
-        Cart savedCart = cartRepository.save(cart);
-        return cartMapper.toResponse(savedCart);
+        try {
+            Cart savedCart = cartRepository.save(cart);
+            return cartMapper.toResponse(savedCart);
+        } catch (DataIntegrityViolationException e) {
+            Cart refreshedCart = cartRepository.findByUserId(userId).orElse(cart);
+            return cartMapper.toResponse(refreshedCart);
+        }
     }
 
     @Override
@@ -102,7 +108,7 @@ public class CartServiceImpl implements CartService {
             throw new BadRequestException("Maximum " + CartConstants.MAX_QUANTITY_PER_SKU + " units allowed per saree SKU.");
         }
 
-        Cart cart = getOrCreateCart(userId);
+        Cart cart = getOrCreateCartForUpdate(userId);
 
         CartItem cartItem = cart.getItems().stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
@@ -125,7 +131,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartResponse removeItemFromCart(Long userId, Long productId) {
-        Cart cart = getOrCreateCart(userId);
+        Cart cart = getOrCreateCartForUpdate(userId);
 
         boolean removed = cart.getItems().removeIf(item -> item.getProduct().getId().equals(productId));
         if (!removed) {
@@ -138,14 +144,14 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public void clearCart(Long userId) {
-        Cart cart = getOrCreateCart(userId);
+        Cart cart = getOrCreateCartForUpdate(userId);
         cart.getItems().clear();
         cartRepository.save(cart);
     }
 
     @Override
     public CartResponse mergeGuestCart(Long userId, CartMergeRequest request) {
-        Cart cart = getOrCreateCart(userId);
+        Cart cart = getOrCreateCartForUpdate(userId);
 
         if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
             return cartMapper.toResponse(cart);
@@ -194,20 +200,37 @@ public class CartServiceImpl implements CartService {
             }
         }
 
-        Cart savedCart = cartRepository.save(cart);
-        return cartMapper.toResponse(savedCart);
+        try {
+            Cart savedCart = cartRepository.save(cart);
+            return cartMapper.toResponse(savedCart);
+        } catch (DataIntegrityViolationException e) {
+            Cart refreshedCart = cartRepository.findByUserId(userId).orElse(cart);
+            return cartMapper.toResponse(refreshedCart);
+        }
     }
 
     private Cart getOrCreateCart(Long userId) {
         return cartRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    User user = userRepository.findById(userId)
-                            .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-                    Cart newCart = Cart.builder()
-                            .user(user)
-                            .items(new ArrayList<>())
-                            .build();
-                    return cartRepository.save(newCart);
-                });
+                .orElseGet(() -> createCartForUser(userId));
+    }
+
+    private Cart getOrCreateCartForUpdate(Long userId) {
+        return cartRepository.findByUserIdForUpdate(userId)
+                .orElseGet(() -> createCartForUser(userId));
+    }
+
+    private Cart createCartForUser(Long userId) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+            Cart newCart = Cart.builder()
+                    .user(user)
+                    .items(new ArrayList<>())
+                    .build();
+            return cartRepository.save(newCart);
+        } catch (DataIntegrityViolationException e) {
+            return cartRepository.findByUserId(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Cart", "userId", userId));
+        }
     }
 }

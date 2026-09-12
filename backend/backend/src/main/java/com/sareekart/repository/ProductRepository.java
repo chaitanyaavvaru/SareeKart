@@ -47,4 +47,16 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     // SAFEGUARD 4: Safe Category Deletion guard
     long countByCategoryId(Long categoryId);
+
+    // PHASE 5: Atomic Conditional Stock Decrement (InnoDB exclusive row lock, prevents overselling)
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Product p SET p.stockQuantity = p.stockQuantity - :quantity " +
+           "WHERE p.id = :productId AND p.stockQuantity >= :quantity AND p.active = true")
+    int decrementStockIfAvailable(@Param("productId") Long productId, @Param("quantity") Integer quantity);
+
+    // PHASE 5: Atomic Stock Restoration for Cancellations
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Product p SET p.stockQuantity = p.stockQuantity + :quantity " +
+           "WHERE p.id = :productId")
+    int incrementStock(@Param("productId") Long productId, @Param("quantity") Integer quantity);
 }

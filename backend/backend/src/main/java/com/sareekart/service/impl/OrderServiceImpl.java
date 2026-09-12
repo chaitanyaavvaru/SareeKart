@@ -25,9 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Service
 @RequiredArgsConstructor
@@ -45,10 +47,28 @@ public class OrderServiceImpl implements OrderService {
     private final WalletService walletService;
     private final LogisticsService logisticsService;
 
+    private boolean isAuthorizedStaff(User user) {
+        return user != null && (user.getRole() == Role.ADMIN || user.getRole() == Role.OWNER || user.getRole() == Role.MANAGER);
+    }
+
     @Override
     public OrderResponse createOrder(Long userId, OrderRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        // SAFEGUARD #4: Atomic Idempotency Check
+        String idempotencyKey = (request.getIdempotencyKey() != null && !request.getIdempotencyKey().trim().isBlank())
+                ? request.getIdempotencyKey().trim()
+                : null;
+
+        if (idempotencyKey != null) {
+            Optional<Order> existingOrderOpt = orderRepository.findByUserIdAndIdempotencyKey(userId, idempotencyKey);
+            if (existingOrderOpt.isPresent()) {
+                log.info("Idempotent replay detected for user #{} with key '{}'. Returning existing order #{}",
+                        userId, idempotencyKey, existingOrderOpt.get().getId());
+                return orderMapper.toResponse(existingOrderOpt.get());
+            }
+        }
 
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new BadRequestException("Shopping cart is empty."));
@@ -57,15 +77,26 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Shopping cart is empty.");
         }
 
-        // Validate stock
-        for (CartItem item : cart.getItems()) {
+        // SAFEGUARD #3: Multi-product deadlock prevention: sort ascending by product ID
+        List<CartItem> sortedCartItems = new ArrayList<>(cart.getItems());
+        sortedCartItems.sort(Comparator.comparing(item -> item.getProduct().getId()));
+
+        // SAFEGUARD #2: Atomic Conditional Stock Decrement (InnoDB exclusive row lock)
+        for (CartItem item : sortedCartItems) {
             Product product = item.getProduct();
             if (!Boolean.TRUE.equals(product.getActive())) {
                 throw new BadRequestException("Product is no longer available: " + product.getName());
             }
-            if (product.getStockQuantity() < item.getQuantity()) {
+            if (item.getQuantity() == null || item.getQuantity() <= 0) {
+                throw new BadRequestException("Invalid item quantity for product: " + product.getName());
+            }
+
+            int rowsUpdated = productRepository.decrementStockIfAvailable(product.getId(), item.getQuantity());
+            if (rowsUpdated == 0) {
+                log.warn("Atomic stock decrement failed for product #{} ({}). Requested: {}",
+                        product.getId(), product.getName(), item.getQuantity());
                 throw new BadRequestException("Insufficient stock for product: " + product.getName() + 
-                        ". Available stock: " + product.getStockQuantity());
+                        ". Available stock is lower than requested quantity.");
             }
         }
 
@@ -115,10 +146,10 @@ public class OrderServiceImpl implements OrderService {
         PincodeLookupResponse logistics = null;
         if (logisticsService != null && pincode != null && !pincode.isBlank()) {
             logistics = logisticsService.checkPincode(pincode);
-            if (!logistics.isServiceable()) {
+            if (logistics != null && !logistics.isServiceable()) {
                 throw new BadRequestException("Delivery is currently not serviceable to PIN code " + pincode + ". Please provide an alternative delivery address.");
             }
-            if ("COD".equalsIgnoreCase(paymentMethod) && !logistics.isCodAvailable()) {
+            if (logistics != null && "COD".equalsIgnoreCase(paymentMethod) && !logistics.isCodAvailable()) {
                 throw new BadRequestException("Cash on Delivery (COD) is not available for PIN code " + pincode + ". Please choose an online payment method or Store Credit.");
             }
         }
@@ -148,20 +179,23 @@ public class OrderServiceImpl implements OrderService {
                 .courierPartner(courier)
                 .currentLocation(hub)
                 .estimatedDeliveryDate(estDelivery)
+                .idempotencyKey(idempotencyKey)
                 .build();
 
-        // Convert cart items to order items and update stock
+        // SAFEGUARD #8: Immutable Order Item Snapshots (Name, Image, Price, Quantity)
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cart.getItems()) {
             Product product = cartItem.getProduct();
-            
-            // Update stock
-            product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
-            productRepository.save(product);
+            String primaryImage = null;
+            if (product.getImages() != null && !product.getImages().isEmpty()) {
+                primaryImage = product.getImages().get(0);
+            }
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .product(product)
+                    .productName(product.getName())
+                    .productImage(primaryImage)
                     .quantity(cartItem.getQuantity())
                     .price(product.getPrice())
                     .build();
@@ -169,7 +203,20 @@ public class OrderServiceImpl implements OrderService {
         }
         order.setItems(orderItems);
 
-        Order savedOrder = orderRepository.save(order);
+        Order savedOrder;
+        try {
+            savedOrder = orderRepository.save(order);
+        } catch (DataIntegrityViolationException e) {
+            // Concurrent submission with same idempotency key raced
+            if (idempotencyKey != null) {
+                Optional<Order> racedOrderOpt = orderRepository.findByUserIdAndIdempotencyKey(userId, idempotencyKey);
+                if (racedOrderOpt.isPresent()) {
+                    log.info("Handled concurrent idempotency conflict for key '{}'. Returning existing order.", idempotencyKey);
+                    return orderMapper.toResponse(racedOrderOpt.get());
+                }
+            }
+            throw e;
+        }
 
         if (walletCreditUsed.compareTo(BigDecimal.ZERO) > 0 && walletService != null) {
             walletService.redeemWallet(user, walletCreditUsed, savedOrder.getId());
@@ -193,8 +240,8 @@ public class OrderServiceImpl implements OrderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // Check if owner or admin
-        if (!user.getRole().equals(Role.ADMIN) && !order.getUser().getId().equals(userId)) {
+        // Staff RBAC Parity: ADMIN, OWNER, MANAGER or Order Owner
+        if (!isAuthorizedStaff(user) && !order.getUser().getId().equals(userId)) {
             throw new BadRequestException("You are not authorized to view this order.");
         }
 
@@ -259,8 +306,8 @@ public class OrderServiceImpl implements OrderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // Authorization check
-        if (!user.getRole().equals(Role.ADMIN) && !order.getUser().getId().equals(userId)) {
+        // Authorization check: Staff RBAC Parity (ADMIN, OWNER, MANAGER) or Order Owner
+        if (!isAuthorizedStaff(user) && !order.getUser().getId().equals(userId)) {
             throw new BadRequestException("You are not authorized to cancel this order.");
         }
 
@@ -271,11 +318,13 @@ public class OrderServiceImpl implements OrderService {
             throw new BadRequestException("Order cannot be cancelled. Current status is: " + order.getStatus());
         }
 
-        // Revert stock
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setPaymentStatus("REFUNDED/CANCELLED");
+        Order savedOrder = orderRepository.save(order);
+
+        // SAFEGUARD #10: Revert stock atomically
         for (OrderItem item : order.getItems()) {
-            Product product = item.getProduct();
-            product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
-            productRepository.save(product);
+            productRepository.incrementStock(item.getProduct().getId(), item.getQuantity());
         }
 
         // Revert wallet credit if any was used on this order
@@ -287,11 +336,91 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        order.setStatus(OrderStatus.CANCELLED);
-        order.setPaymentStatus("REFUNDED/CANCELLED");
-        Order savedOrder = orderRepository.save(order);
-
         return orderMapper.toResponse(savedOrder);
+    }
+
+    @Override
+    public OrderResponse cancelPendingOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (!isAuthorizedStaff(user) && !order.getUser().getId().equals(userId)) {
+            throw new BadRequestException("You are not authorized to cancel this order.");
+        }
+
+        // SAFEGUARD #6: Idempotency: If already cancelled, no-op (do NOT restore stock again)
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            log.info("Order #{} is already cancelled. Idempotent cancel-pending request ignored.", orderId);
+            return orderMapper.toResponse(order);
+        }
+
+        // SAFEGUARD #5: A paid order must NEVER be cancelled via cancel-pending
+        if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus())) {
+            throw new BadRequestException("Paid orders cannot be cancelled via pending cancellation.");
+        }
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Order is not eligible for pending cancellation. Current status: " + order.getStatus());
+        }
+
+        String currentPaymentStatus = order.getPaymentStatus() != null ? order.getPaymentStatus() : "PENDING";
+
+        // SAFEGUARD #6: Atomic transition in DB guarantees only ONE caller executes the restoration
+        int rows = orderRepository.transitionOrderStatusAndPaymentStatus(
+                orderId,
+                OrderStatus.PENDING,
+                currentPaymentStatus,
+                OrderStatus.CANCELLED,
+                "CANCELLED"
+        );
+
+        if (rows == 1) {
+            // This thread won the atomic transition: restore stock
+            for (OrderItem item : order.getItems()) {
+                productRepository.incrementStock(item.getProduct().getId(), item.getQuantity());
+            }
+
+            if (order.getWalletCreditUsed() != null && order.getWalletCreditUsed().compareTo(BigDecimal.ZERO) > 0 && walletService != null) {
+                try {
+                    walletService.revertOrderRedemption(order.getUser().getId(), order.getWalletCreditUsed(), order.getId());
+                } catch (Exception e) {
+                    log.error("Failed to revert wallet credit for cancelled pending order #{}: {}", order.getId(), e.getMessage());
+                }
+            }
+
+            order.setStatus(OrderStatus.CANCELLED);
+            order.setPaymentStatus("CANCELLED");
+            log.info("Pending order #{} successfully cancelled and inventory restored.", orderId);
+        } else {
+            // Another thread already transitioned the order
+            Order refreshed = orderRepository.findById(orderId).orElse(order);
+            return orderMapper.toResponse(refreshed);
+        }
+
+        return orderMapper.toResponse(order);
+    }
+
+    @Override
+    public int sweepAbandonedPendingOrders(int olderThanMinutes) {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(olderThanMinutes);
+        List<Order> abandoned = orderRepository.findByStatusAndPaymentStatusAndCreatedAtBefore(
+                OrderStatus.PENDING, "PENDING", cutoff);
+        int sweptCount = 0;
+        for (Order o : abandoned) {
+            try {
+                cancelPendingOrder(o.getId(), o.getUser().getId());
+                sweptCount++;
+            } catch (Exception e) {
+                log.error("Failed to sweep abandoned pending order #{}: {}", o.getId(), e.getMessage());
+            }
+        }
+        if (sweptCount > 0) {
+            log.info("Abandoned pending orders sweep completed: restored inventory for {} orders", sweptCount);
+        }
+        return sweptCount;
     }
 
     @Override

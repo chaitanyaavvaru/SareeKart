@@ -18,6 +18,10 @@ public interface OrderService {
     OrderResponse updateOrderStatus(Long orderId, String status);
 
     OrderResponse cancelOrder(Long orderId, Long userId);
+
+    OrderResponse cancelPendingOrder(Long orderId, Long userId);
+
+    int sweepAbandonedPendingOrders(int olderThanMinutes);
     
     OrderResponse trackOrder(Long orderId, String trackingNumber, String contact);
     

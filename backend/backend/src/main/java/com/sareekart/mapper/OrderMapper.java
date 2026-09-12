@@ -51,15 +51,20 @@ public class OrderMapper {
         BigDecimal price = item.getPrice();
         BigDecimal itemTotalPrice = price.multiply(BigDecimal.valueOf(item.getQuantity()));
 
-        String image = null;
-        if (item.getProduct().getImages() != null && !item.getProduct().getImages().isEmpty()) {
+        String image = item.getProductImage();
+        if (image == null && item.getProduct() != null && item.getProduct().getImages() != null && !item.getProduct().getImages().isEmpty()) {
             image = item.getProduct().getImages().get(0);
+        }
+
+        String productName = item.getProductName();
+        if (productName == null && item.getProduct() != null) {
+            productName = item.getProduct().getName();
         }
 
         return OrderItemResponse.builder()
                 .id(item.getId())
-                .productId(item.getProduct().getId())
-                .productName(item.getProduct().getName())
+                .productId(item.getProduct() != null ? item.getProduct().getId() : null)
+                .productName(productName)
                 .productImage(image)
                 .quantity(item.getQuantity())
                 .price(price)

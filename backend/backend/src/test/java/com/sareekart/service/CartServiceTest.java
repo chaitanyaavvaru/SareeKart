@@ -65,6 +65,7 @@ class CartServiceTest {
                 .build();
         cart = Cart.builder().id(3L).user(user).items(new ArrayList<>()).build();
         lenient().when(cartRepository.findByUserId(7L)).thenReturn(Optional.of(cart));
+        lenient().when(cartRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(cart));
         lenient().when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 

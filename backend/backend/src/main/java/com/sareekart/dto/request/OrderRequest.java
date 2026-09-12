@@ -24,4 +24,6 @@ public class OrderRequest {
     private String couponCode;
 
     private java.math.BigDecimal walletDebitAmount;
+
+    private String idempotencyKey;
 }

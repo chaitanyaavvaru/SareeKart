@@ -97,4 +97,24 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             OrderStatus status);
 
     List<Order> findByStatusNot(OrderStatus status);
+
+    // PHASE 5: Idempotent order retrieval
+    Optional<Order> findByUserIdAndIdempotencyKey(Long userId, String idempotencyKey);
+
+    // PHASE 5: Sweep for abandoned PENDING orders
+    List<Order> findByStatusAndPaymentStatusAndCreatedAtBefore(
+            OrderStatus status,
+            String paymentStatus,
+            LocalDateTime cutoffTime);
+
+    // PHASE 5: Atomic state transition for idempotent cancellation & stock restoration
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Order o SET o.status = :newStatus, o.paymentStatus = :newPaymentStatus " +
+           "WHERE o.id = :orderId AND o.status = :expectedStatus AND o.paymentStatus = :expectedPaymentStatus")
+    int transitionOrderStatusAndPaymentStatus(
+            @Param("orderId") Long orderId,
+            @Param("expectedStatus") OrderStatus expectedStatus,
+            @Param("expectedPaymentStatus") String expectedPaymentStatus,
+            @Param("newStatus") OrderStatus newStatus,
+            @Param("newPaymentStatus") String newPaymentStatus);
 }

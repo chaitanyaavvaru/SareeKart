@@ -410,6 +410,8 @@ public class DataSeeder implements CommandLineRunner {
             com.sareekart.entity.OrderItem item1 = com.sareekart.entity.OrderItem.builder()
                     .order(order)
                     .product(p1)
+                    .productName(p1.getName())
+                    .productImage(p1.getImages() != null && !p1.getImages().isEmpty() ? p1.getImages().get(0) : null)
                     .quantity(qty1)
                     .price(p1.getPrice())
                     .build();
@@ -421,6 +423,8 @@ public class DataSeeder implements CommandLineRunner {
                 items.add(com.sareekart.entity.OrderItem.builder()
                         .order(order)
                         .product(p2)
+                        .productName(p2.getName())
+                        .productImage(p2.getImages() != null && !p2.getImages().isEmpty() ? p2.getImages().get(0) : null)
                         .quantity(qty2)
                         .price(p2.getPrice())
                         .build());

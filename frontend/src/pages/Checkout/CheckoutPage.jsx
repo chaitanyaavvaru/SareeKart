@@ -68,6 +68,10 @@ export default function CheckoutPage() {
   const [submitError, setSubmitError] = useState(null);
   const [placedOrder, setPlacedOrder] = useState(null);
   const [pendingPaymentOrder, setPendingPaymentOrder] = useState(null);
+  const idempotencyKeyRef = useRef(null);
+  if (!idempotencyKeyRef.current) {
+    idempotencyKeyRef.current = 'chk_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+  }
 
   const [fullName, setFullName] = useState(user ? `${user.firstName} ${user.lastName || ''}`.trim() : '');
   const [phone, setPhone] = useState('');
@@ -139,6 +143,8 @@ export default function CheckoutPage() {
   const isFullyCoveredByWallet = applyWalletCredit && grandTotal === 0 && walletDeduction > 0;
 
   useEffect(() => {
+    let isMounted = true;
+
     if (items.length === 0) {
       if (step !== 'success') navigate('/products');
       return;
@@ -160,6 +166,7 @@ export default function CheckoutPage() {
         setSyncError(null);
         // Atomically merge guest items into backend cart with capped summation and stock check
         const mergeRes = await cartService.mergeGuestCart(items);
+        if (!isMounted) return;
         if (mergeRes.data?.hasStockIssues) {
           setSyncError('Some items in your cart exceed available stock. Please adjust your cart before checking out.');
           return;
@@ -171,6 +178,7 @@ export default function CheckoutPage() {
           setStep(nextStep);
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error('Cart synchronization failed:', error);
         if (error.response?.status === 401 || error.response?.status === 403) {
           navigate('/login?redirect=checkout');
@@ -183,6 +191,10 @@ export default function CheckoutPage() {
     };
 
     syncCartWithDatabase();
+
+    return () => {
+      isMounted = false;
+    };
   }, [items, navigate, step, syncAttempt, user]);
 
   const loadRazorpayScript = () => new Promise((resolve) => {
@@ -249,6 +261,7 @@ export default function CheckoutPage() {
         paymentMethod: isFullyCoveredByWallet ? 'WALLET' : paymentMethod,
         couponCode: appliedCoupon ? appliedCoupon.code : null,
         walletDebitAmount: walletDeduction > 0 ? walletDeduction : null,
+        idempotencyKey: idempotencyKeyRef.current,
       };
 
       let orderData = pendingPaymentOrder;
@@ -261,6 +274,7 @@ export default function CheckoutPage() {
       if (isFullyCoveredByWallet || paymentMethod === 'COD') {
         setPlacedOrder(orderData);
         setPendingPaymentOrder(null);
+        idempotencyKeyRef.current = null;
         setStep('success');
         dispatch(clearCart());
         return;
@@ -296,6 +310,7 @@ export default function CheckoutPage() {
             });
             setPlacedOrder(verificationResponse.data.data);
             setPendingPaymentOrder(null);
+            idempotencyKeyRef.current = null;
             setStep('success');
             dispatch(clearCart());
           } catch (error) {
@@ -305,9 +320,18 @@ export default function CheckoutPage() {
           }
         },
         modal: {
-          ondismiss: () => {
+          ondismiss: async () => {
             setStep('payment');
-            setSubmitError('Payment modal closed. The order has not been completed.');
+            setSubmitError('Payment modal closed. The pending checkout was cancelled.');
+            if (orderData?.id) {
+              try {
+                await api.put(`/orders/${orderData.id}/cancel-pending`);
+              } catch (err) {
+                console.warn('cancel-pending failed or already handled:', err);
+              }
+              setPendingPaymentOrder(null);
+              idempotencyKeyRef.current = 'chk_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+            }
           },
         },
       };

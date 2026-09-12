@@ -92,6 +92,14 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success("Order cancelled successfully", order));
     }
 
+    @PutMapping("/orders/{id}/cancel-pending")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelPendingOrder(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id) {
+        OrderResponse order = orderService.cancelPendingOrder(id, user.getId());
+        return ResponseEntity.ok(ApiResponse.success("Pending order cancelled and stock restored successfully", order));
+    }
+
     @GetMapping("/admin/orders")
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getAllOrders() {
         List<OrderResponse> orders = orderService.getAllOrders();

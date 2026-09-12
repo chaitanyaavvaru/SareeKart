@@ -59,6 +59,9 @@ public class Order {
 
     private String trackingNumber;
 
+    @Column(name = "idempotency_key", length = 64)
+    private String idempotencyKey;
+
     private String courierPartner;
 
     private String currentLocation;

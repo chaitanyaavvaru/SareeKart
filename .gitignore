@@ -22,3 +22,8 @@ frontend/dist/
 # Playwright
 test-results/
 playwright-report/
+
+# Uploads & Scratch
+uploads/
+backend/backend/uploads/
+.agents/
