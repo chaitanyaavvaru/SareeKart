@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowRight, ArrowUpDown, Check, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
@@ -12,6 +12,7 @@ import SEO from '../../components/common/SEO';
 import { closeAddedModal, setCartOpen } from '../../redux/slices/cartSlice';
 import { fetchProducts } from '../../redux/slices/productSlice';
 import MobileFilterDrawer from '../../components/product/MobileFilterDrawer';
+import eventTracker from '../../utils/eventTracker';
 
 const COLOR_FAMILY_HEX = {
   Red: '#FF0000',
@@ -171,6 +172,32 @@ export default function ProductsPage() {
 
     dispatch(fetchProducts(criteria));
   }, [categories, dispatch, fabrics, inStockOnly, occasions, page, priceRange, searchQuery, selectedCategory, selectedColorFamily, selectedFabric, selectedOccasion, sortBy, sortDir]);
+
+  // Telemetry: track SEARCH_QUERY and CATEGORY_VIEW once fetch completes
+  const lastTrackedQueryRef = useRef('');
+  const lastTrackedCategoryRef = useRef('');
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (searchQuery.trim() && searchQuery.trim() !== lastTrackedQueryRef.current) {
+      lastTrackedQueryRef.current = searchQuery.trim();
+      eventTracker.trackSearch(searchQuery.trim(), pagination?.totalElements ?? products.length, {
+        category: selectedCategory,
+        fabric: selectedFabric,
+        occasion: selectedOccasion,
+      });
+    }
+
+    if (selectedCategory && selectedCategory !== 'All' && selectedCategory !== lastTrackedCategoryRef.current) {
+      lastTrackedCategoryRef.current = selectedCategory;
+      const catObj = categories.find((c) => c.slug === selectedCategory || c.name === selectedCategory);
+      eventTracker.trackCategoryView(catObj?.id || null, catObj?.name || selectedCategory, {
+        slug: selectedCategory,
+        resultsCount: pagination?.totalElements ?? products.length,
+      });
+    }
+  }, [loading, searchQuery, selectedCategory, pagination?.totalElements, products.length, categories, selectedFabric, selectedOccasion]);
 
   // Helper to update a URL search param
   const updateParam = (key, value) => {

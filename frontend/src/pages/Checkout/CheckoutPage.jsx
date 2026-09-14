@@ -22,9 +22,9 @@ import api from '../../api/axiosConfig';
 import { clearCart } from '../../redux/slices/cartSlice';
 import SEO from '../../components/common/SEO';
 import walletService from '../../services/walletService';
-import logisticsService from '../../services/logisticsService';
 import whatsAppService from '../../services/whatsAppService';
 import cartService from '../../services/cartService';
+import eventTracker from '../../utils/eventTracker';
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat('en-IN', {
@@ -141,6 +141,17 @@ export default function CheckoutPage() {
   const walletDeduction = applyWalletCredit ? Math.min(availableWalletCredit, netBeforeWallet) : 0;
   const grandTotal = Math.max(0, netBeforeWallet - walletDeduction);
   const isFullyCoveredByWallet = applyWalletCredit && grandTotal === 0 && walletDeduction > 0;
+
+  const hasTrackedCheckoutInitiatedRef = useRef(false);
+  useEffect(() => {
+    if (step === 'address' && !hasTrackedCheckoutInitiatedRef.current && items.length > 0) {
+      hasTrackedCheckoutInitiatedRef.current = true;
+      eventTracker.trackCheckoutInitiated(items.length, grandTotal, {
+        subtotal,
+        itemCount: items.reduce((s, i) => s + (i.qty || 1), 0),
+      });
+    }
+  }, [step, items.length, grandTotal, subtotal]);
 
   useEffect(() => {
     let isMounted = true;
@@ -277,6 +288,10 @@ export default function CheckoutPage() {
         idempotencyKeyRef.current = null;
         setStep('success');
         dispatch(clearCart());
+        eventTracker.trackOrderCompleted(orderData.id, orderData.totalAmount, {
+          itemCount: orderData.items?.length || items.length,
+          paymentMethod: isFullyCoveredByWallet ? 'WALLET' : paymentMethod,
+        });
         return;
       }
 
@@ -308,11 +323,16 @@ export default function CheckoutPage() {
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
             });
-            setPlacedOrder(verificationResponse.data.data);
+            const verifiedOrder = verificationResponse.data.data;
+            setPlacedOrder(verifiedOrder);
             setPendingPaymentOrder(null);
             idempotencyKeyRef.current = null;
             setStep('success');
             dispatch(clearCart());
+            eventTracker.trackOrderCompleted(verifiedOrder.id, verifiedOrder.totalAmount, {
+              itemCount: verifiedOrder.items?.length || items.length,
+              paymentMethod: 'RAZORPAY',
+            });
           } catch (error) {
             console.error('Payment verification failed:', error);
             setSubmitError(error.response?.data?.message || 'Payment verification failed. Please contact support.');

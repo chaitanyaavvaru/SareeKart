@@ -34,6 +34,7 @@ import WeaveProvenanceModal from '../../components/product/WeaveProvenanceModal'
 import TailoringStudioModal from '../../components/tailoring/TailoringStudioModal';
 import AiStylistModal from '../../components/stylist/AiStylistModal';
 import { useCurrency } from '../../context/CurrencyContext';
+import eventTracker from '../../utils/eventTracker';
 
 const fallbackImage = 'https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?auto=format&fit=crop&fm=webp&w=1200&q=80';
 const detailFallbacks = [
@@ -88,13 +89,18 @@ export default function ProductDetailPage() {
   const [visuallySimilarDrapes, setVisuallySimilarDrapes] = useState([]);
 
   useEffect(() => {
+    let startTime = Date.now();
+    let viewedProduct = null;
+
     const loadProductData = async () => {
       try {
         setLoading(true);
         setError(null);
         const response = await productService.getProductById(id);
         const loadedProduct = response.data;
+        viewedProduct = loadedProduct;
         setProduct(loadedProduct);
+        eventTracker.trackProductView(loadedProduct, 0);
 
         // Fetch AI visually similar drapes
         try {
@@ -140,6 +146,15 @@ export default function ProductDetailPage() {
     };
 
     loadProductData();
+
+    return () => {
+      if (viewedProduct) {
+        const dwellTimeMs = Date.now() - startTime;
+        if (dwellTimeMs > 1000) {
+          eventTracker.trackProductView(viewedProduct, dwellTimeMs);
+        }
+      }
+    };
   }, [id, user]);
 
   const productImages = useMemo(() => getImages(product), [product]);
@@ -172,6 +187,7 @@ export default function ProductDetailPage() {
         })
       );
     }
+    eventTracker.trackAddToCart(product, qty);
   };
 
   const handleCheckPincode = async (e) => {
@@ -223,9 +239,11 @@ export default function ProductDetailPage() {
       if (isWishlisted) {
         await api.delete(`/wishlist/${product.id}`);
         setIsWishlisted(false);
+        eventTracker.trackWishlistRemove(product);
       } else {
         await api.post(`/wishlist/${product.id}`);
         setIsWishlisted(true);
+        eventTracker.trackWishlistAdd(product);
       }
     } catch (wishlistError) {
       console.error('Failed to toggle wishlist', wishlistError);

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Activity,
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
@@ -10,6 +11,7 @@ import {
   Clock,
   CreditCard,
   Download,
+  Eye,
   FileSpreadsheet,
   FileText,
   Filter,
@@ -20,7 +22,9 @@ import {
   Package,
   Percent,
   RefreshCw,
+  Search,
   ShoppingBag,
+  Sparkles,
   Tag,
   TrendingDown,
   TrendingUp,
@@ -373,6 +377,7 @@ export default function AnalyticsDashboard() {
   const [sales, setSales] = useState(null);
   const [inventory, setInventory] = useState(null);
   const [customers, setCustomers] = useState(null);
+  const [behavior, setBehavior] = useState(null);
 
   // Active Sub-Tab
   const [inventoryTab, setInventoryTab] = useState('FAST'); // 'FAST' | 'SLOW' | 'STOCKOUT'
@@ -395,17 +400,19 @@ export default function AnalyticsDashboard() {
         params.endDate = customEndDate;
       }
 
-      const [overviewRes, salesRes, inventoryRes, customersRes] = await Promise.all([
+      const [overviewRes, salesRes, inventoryRes, customersRes, behaviorRes] = await Promise.all([
         api.get('/admin/analytics/overview', { params }),
         api.get('/admin/analytics/sales', { params }),
         api.get('/admin/analytics/inventory'),
         api.get('/admin/analytics/customers', { params }),
+        api.get('/admin/customer-behavior/overview', { params }).catch(() => ({ data: { success: false } })),
       ]);
 
       if (overviewRes.data?.success) setOverview(overviewRes.data.data);
       if (salesRes.data?.success) setSales(salesRes.data.data);
       if (inventoryRes.data?.success) setInventory(inventoryRes.data.data);
       if (customersRes.data?.success) setCustomers(customersRes.data.data);
+      if (behaviorRes.data?.success) setBehavior(behaviorRes.data.data);
     } catch (err) {
       console.error('Error loading analytics:', err);
       setError(err.response?.data?.message || 'Failed to load telemetry data. Please try again.');
@@ -1054,6 +1061,150 @@ export default function AnalyticsDashboard() {
                     </div>
                   )
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Phase 6: Customer Behavioral Telemetry & Conversion Funnel */}
+          <div data-testid="behavioral-telemetry-section" className="border border-[#DDD8CF] bg-white p-6 shadow-xs">
+            <div className="flex flex-col gap-2 border-b border-[#DDD8CF] pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-[#1E6A62]" />
+                  <h2 className="font-serif text-base font-semibold text-[#17211F]">
+                    Customer Behavioral Telemetry & Event Funnel
+                  </h2>
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-200">
+                    Phase 6 Live Stream
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-[#71817A]">
+                  Micro-interactions, true multi-stage conversion funnels, top explored sarees, and search queries
+                </p>
+              </div>
+
+              {/* Behavior Quick Stats */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="rounded-md bg-[#FAF8F5] border border-[#DDD8CF] px-2.5 py-1 font-bold text-[#17211F]">
+                  Events: {formatNumber(behavior?.totalEvents || 0)}
+                </span>
+                <span className="rounded-md bg-[#FAF8F5] border border-[#DDD8CF] px-2.5 py-1 font-bold text-[#17211F]">
+                  Sessions: {formatNumber(behavior?.activeSessions || 0)}
+                </span>
+              </div>
+            </div>
+
+            {/* 4-Stage Conversion Funnel Visualizer */}
+            <div className="mt-6">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#71817A] mb-3">
+                4-Stage Behavior-Driven Conversion Funnel
+              </h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {(behavior?.funnel || [
+                  { stage: 'PRODUCT_VIEW', label: 'Product View', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 100, overallConversionRate: 100 },
+                  { stage: 'ADD_TO_CART', label: 'Add to Cart', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                  { stage: 'CHECKOUT_INITIATED', label: 'Checkout Started', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                  { stage: 'ORDER_COMPLETED', label: 'Order Completed', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                ]).map((stage, idx) => {
+                  const maxSessions = Math.max(1, behavior?.funnel?.[0]?.uniqueSessions || 1);
+                  const barPercent = Math.min(100, Math.max(4, Math.round(((stage.uniqueSessions || stage.totalEvents || 0) / maxSessions) * 100)));
+                  return (
+                    <div key={stage.stage || idx} className="border border-[#DDD8CF] bg-[#FAF8F5] p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#71817A]">
+                            Stage {idx + 1}: {stage.label || stage.stage}
+                          </span>
+                          <span className="text-[11px] font-bold text-emerald-800">
+                            {idx === 0 ? 'Entry' : `${stage.conversionRateFromPrevious?.toFixed(1) || 0}% conv`}
+                          </span>
+                        </div>
+                        <p className="mt-2 font-serif text-2xl font-medium text-[#17211F]">
+                          {formatNumber(stage.uniqueSessions || 0)}
+                          <span className="ml-1 text-xs font-sans font-normal text-[#71817A]">sessions</span>
+                        </p>
+                        <p className="text-[11px] text-[#71817A]">
+                          {formatNumber(stage.totalEvents || 0)} total occurrences
+                        </p>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="h-2 w-full rounded-full bg-[#EAE4D9]">
+                          <div
+                            className="h-2 rounded-full bg-[#1E6A62] transition-all"
+                            style={{ width: `${barPercent}%` }}
+                          />
+                        </div>
+                        <div className="mt-1 flex justify-between text-[10px] text-[#71817A]">
+                          <span>Funnel share</span>
+                          <span className="font-bold text-[#17211F]">{stage.overallConversionRate?.toFixed(1) || 0}% overall</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Trending Products & Search Telemetry */}
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Top Explored Sarees */}
+              <div className="border border-[#DDD8CF] p-4">
+                <div className="flex items-center gap-2 border-b border-[#DDD8CF] pb-2">
+                  <Eye className="h-4 w-4 text-[#1E6A62]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#17211F]">
+                    Top Explored Sarees (Behavioral Interest)
+                  </h4>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {(behavior?.topProducts || []).length === 0 ? (
+                    <p className="py-4 text-center text-xs text-[#71817A]">No product view events recorded yet.</p>
+                  ) : (
+                    (behavior?.topProducts || []).slice(0, 5).map((prod, idx) => (
+                      <div key={idx} className="flex items-center justify-between border-b border-[#DDD8CF]/40 pb-2 text-xs last:border-0">
+                        <div>
+                          <p className="font-bold text-[#17211F]">{prod.productName || `Product #${prod.productId}`}</p>
+                          <p className="text-[11px] text-[#71817A]">
+                            {prod.category || 'Handloom'} {prod.fabric ? `• ${prod.fabric}` : ''}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-[#1E6A62]">{formatNumber(prod.viewCount)} views</span>
+                          <p className="text-[10px] text-[#71817A]">{formatNumber(prod.uniqueViewers)} unique viewers</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Trending Customer Searches */}
+              <div className="border border-[#DDD8CF] p-4">
+                <div className="flex items-center gap-2 border-b border-[#DDD8CF] pb-2">
+                  <Search className="h-4 w-4 text-[#1E6A62]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#17211F]">
+                    Trending Search Queries
+                  </h4>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {(behavior?.topSearches || []).length === 0 ? (
+                    <p className="py-4 text-center text-xs text-[#71817A]">No search queries logged yet.</p>
+                  ) : (
+                    (behavior?.topSearches || []).slice(0, 5).map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between border-b border-[#DDD8CF]/40 pb-2 text-xs last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#17211F]">"{item.query}"</span>
+                          {item.zeroResults && (
+                            <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-800">
+                              0 Results
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-bold text-[#71817A]">{formatNumber(item.queryCount)} searches</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

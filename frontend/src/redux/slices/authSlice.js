@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axiosConfig';
+import eventTracker from '../../utils/eventTracker';
 
 /**
  * Maps raw network/server errors to human-readable authentication error messages.
@@ -69,6 +70,7 @@ export const loginUser = createAsyncThunk(
       if (data.success && data.data) {
         localStorage.setItem('sareekart_token', data.data.token);
         localStorage.setItem('sareekart_user', JSON.stringify(data.data));
+        eventTracker.identifyUser().catch(() => {});
         return data.data;
       }
       return rejectWithValue(data.message || 'Login failed. Please try again.');
@@ -88,6 +90,7 @@ export const registerUser = createAsyncThunk(
       if (data.success && data.data) {
         localStorage.setItem('sareekart_token', data.data.token);
         localStorage.setItem('sareekart_user', JSON.stringify(data.data));
+        eventTracker.identifyUser().catch(() => {});
         return data.data;
       }
       return rejectWithValue(data.message || 'Registration failed. Please try again.');
@@ -127,6 +130,7 @@ const authSlice = createSlice({
     logout: (state) => {
       localStorage.removeItem('sareekart_token');
       localStorage.removeItem('sareekart_user');
+      eventTracker.resetSession();
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
