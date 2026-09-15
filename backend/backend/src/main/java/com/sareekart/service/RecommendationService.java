@@ -1,17 +1,18 @@
 package com.sareekart.service;
 
 import com.sareekart.dto.response.ProductResponse;
+import com.sareekart.dto.response.ScoredProductResponse;
 
 import java.util.List;
 
 /**
- * Phase 7: Recommendation Service interface.
+ * Phase 8: Recommendation Service Interface.
  * 
- * Generates recommendation candidates from Neo4j graph traversals and hydrates
- * live catalog details, prices, and stock from authoritative MySQL storage.
+ * Bridges Neo4j graph traversals, dense vector semantic search, dynamic customer
+ * taste centroids, and authoritative MySQL product hydration into explainable
+ * hybrid recommendations.
  * 
- * Non-blocking guarantee: Automatically falls back to deterministic MySQL
- * queries if Neo4j is offline, timed out, or returns insufficient candidates.
+ * Non-blocking guarantee: Multi-tier fallback ensures 100% storefront uptime.
  */
 public interface RecommendationService {
 
@@ -21,5 +22,19 @@ public interface RecommendationService {
 
     List<ProductResponse> getPersonalizedRecommendations(Long userId, int limit);
 
+    List<ProductResponse> getPersonalizedRecommendations(Long userId, String sessionId, int limit);
+
     List<ProductResponse> getSimilarSarees(Long productId, int limit);
+
+    List<ProductResponse> getTrendingSarees(int limit);
+
+    List<ProductResponse> getCompleteTheLook(Long productId, int limit);
+
+    List<ScoredProductResponse> getExplainableRecommendations(
+            Long productId,
+            Long userId,
+            String sessionId,
+            String surface,
+            int limit
+    );
 }

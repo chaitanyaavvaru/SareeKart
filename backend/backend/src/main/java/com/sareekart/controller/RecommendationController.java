@@ -2,6 +2,7 @@ package com.sareekart.controller;
 
 import com.sareekart.dto.response.ApiResponse;
 import com.sareekart.dto.response.ProductResponse;
+import com.sareekart.dto.response.ScoredProductResponse;
 import com.sareekart.entity.User;
 import com.sareekart.service.GraphService;
 import com.sareekart.service.RecommendationService;
@@ -17,10 +18,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Phase 7: Knowledge Graph Recommendation Controller.
+ * Phase 8: AI Recommendations & Hybrid Ranking Controller.
  * 
- * Exposes traversal-based recommendation candidates hydrated with authoritative
- * MySQL pricing, stock, and imagery.
+ * Exposes multi-factor hybrid recommendations bridging Neo4j graph traversals,
+ * dense semantic vector search, dynamic customer taste modeling, and authoritative
+ * MySQL product hydration.
  * 
  * Non-blocking guarantee: Resilient fallback ensures 100% storefront uptime.
  */
@@ -29,7 +31,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Knowledge Graph Recommendations", description = "Traversal-based product discovery and customer affinity")
+@Tag(name = "AI Recommendations & Hybrid Ranking", description = "Multi-factor recommendation engine and explainable rankings")
 public class RecommendationController {
 
     private final RecommendationService recommendationService;
@@ -54,17 +56,18 @@ public class RecommendationController {
     }
 
     @GetMapping("/personalized")
-    @Operation(summary = "Customer affinity recommendations based on fabric, weave, and occasion")
+    @Operation(summary = "Customer affinity recommendations based on dynamic taste vector, fabric, weave, and occasion")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getPersonalizedRecommendations(
             @AuthenticationPrincipal User user,
+            @RequestParam(required = false) String sessionId,
             @RequestParam(defaultValue = "8") int limit) {
         Long userId = user != null ? user.getId() : null;
-        List<ProductResponse> products = recommendationService.getPersonalizedRecommendations(userId, limit);
+        List<ProductResponse> products = recommendationService.getPersonalizedRecommendations(userId, sessionId, limit);
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 
     @GetMapping("/similar/{productId}")
-    @Operation(summary = "Structurally similar sarees matching fabric, occasion, and color family")
+    @Operation(summary = "Structurally & semantically similar sarees matching fabric, occasion, and dense vector embedding")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getSimilarSarees(
             @PathVariable Long productId,
             @RequestParam(defaultValue = "6") int limit) {
@@ -72,8 +75,40 @@ public class RecommendationController {
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 
+    @GetMapping("/trending")
+    @Operation(summary = "Trending heritage sarees ranked by 7-day velocity and popularity")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getTrendingSarees(
+            @RequestParam(defaultValue = "8") int limit) {
+        List<ProductResponse> products = recommendationService.getTrendingSarees(limit);
+        return ResponseEntity.ok(ApiResponse.success(products));
+    }
+
+    @GetMapping("/complete-the-look/{productId}")
+    @Operation(summary = "Complete The Look: Complementary accessories, contrast blouses, and pairing sarees")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getCompleteTheLook(
+            @PathVariable Long productId,
+            @RequestParam(defaultValue = "4") int limit) {
+        List<ProductResponse> products = recommendationService.getCompleteTheLook(productId, limit);
+        return ResponseEntity.ok(ApiResponse.success(products));
+    }
+
+    @GetMapping("/explainable/{productId}")
+    @Operation(summary = "Explainable recommendations with multi-factor score and transparency tags")
+    public ResponseEntity<ApiResponse<List<ScoredProductResponse>>> getExplainableRecommendations(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal User user,
+            @RequestParam(required = false) String sessionId,
+            @RequestParam(defaultValue = "SIMILAR") String surface,
+            @RequestParam(defaultValue = "6") int limit) {
+        Long userId = user != null ? user.getId() : null;
+        List<ScoredProductResponse> scored = recommendationService.getExplainableRecommendations(
+                productId, userId, sessionId, surface, limit
+        );
+        return ResponseEntity.ok(ApiResponse.success(scored));
+    }
+
     @GetMapping("/status")
-    @Operation(summary = "Graph service health and availability status")
+    @Operation(summary = "Graph service and recommendation engine health status")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getGraphStatus() {
         Map<String, Object> stats = graphService.getGraphStatistics();
         return ResponseEntity.ok(ApiResponse.success(stats));
