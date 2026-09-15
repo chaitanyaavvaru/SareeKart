@@ -41,5 +41,22 @@ services:
     depends_on:
       - backend
 
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: sareekart-neo4j
+    restart: always
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/sareekart2026
+      - NEO4J_server_memory_heap_initial__size=256m
+      - NEO4J_server_memory_heap_max__size=512m
+      - NEO4J_server_memory_pagecache_size=256m
+    volumes:
+      - neo4j_data:/data
+
 volumes:
   mysql_data:
+  neo4j_data:
+

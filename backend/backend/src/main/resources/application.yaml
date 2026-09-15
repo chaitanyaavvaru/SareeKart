@@ -55,3 +55,10 @@ whatsapp:
     verify-token: "sareekart-verify-token"
 
 spring.ai.openai.api-key: "sk-proj-dummy-key"
+
+neo4j:
+  uri: ${NEO4J_URI:bolt://localhost:7687}
+  username: ${NEO4J_USERNAME:neo4j}
+  password: ${NEO4J_PASSWORD:sareekart2026}
+  enabled: ${NEO4J_ENABLED:true}
+
