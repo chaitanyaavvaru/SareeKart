@@ -1,6 +1,7 @@
 package com.sareekart.controller;
 
 import com.sareekart.dto.whatsapp.WhatsAppWebhookDto;
+import com.sareekart.security.WhatsAppWebhookSignatureValidator;
 import com.sareekart.service.WhatsAppWebhookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 public class WhatsAppWebhookController {
 
     private final WhatsAppWebhookService webhookService;
+    private final WhatsAppWebhookSignatureValidator signatureValidator;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @Value("${whatsapp.webhook.verify-token:sareekart-verify-token}")
     private String verifyToken;
@@ -38,15 +41,27 @@ public class WhatsAppWebhookController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> receiveWebhook(@RequestBody WhatsAppWebhookDto payload) {
+    public ResponseEntity<Void> receiveWebhook(
+            @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
+            @RequestBody(required = false) byte[] payloadBytes) {
+
+        if (payloadBytes == null || payloadBytes.length == 0) {
+            return ResponseEntity.ok().build();
+        }
+
+        if (!signatureValidator.isValid(payloadBytes, signature)) {
+            log.warn("Unauthorized WhatsApp Webhook: Invalid HMAC signature");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         try {
+            WhatsAppWebhookDto payload = objectMapper.readValue(payloadBytes, WhatsAppWebhookDto.class);
             log.debug("Received WhatsApp Webhook Payload: {}", payload);
             webhookService.processWebhook(payload);
-            // Meta requires a 200 OK response quickly
             return ResponseEntity.ok().build();
         } catch (Exception e) {
-            log.error("Error processing WhatsApp Webhook", e);
-            // Even on error, we should return 200 OK so Meta doesn't keep retrying if it's a bug in our parsing
+            log.error("Error processing WhatsApp Webhook payload", e);
+            // Return 200 OK so Meta doesn't continuously retry bad payloads
             return ResponseEntity.ok().build();
         }
     }

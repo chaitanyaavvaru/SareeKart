@@ -33,6 +33,31 @@ export const whatsAppService = {
   async resendNotification(logId) {
     const response = await api.post(`/admin/whatsapp/resend/${logId}`);
     return response.data?.data;
+  },
+
+  // Conversation Clienteling & Human Escalation Endpoints
+  async getConversations(status = 'ALL') {
+    const response = await api.get('/admin/whatsapp/conversations', {
+      params: { status }
+    });
+    return response.data?.data || [];
+  },
+
+  async getConversationMessages(id) {
+    const response = await api.get(`/admin/whatsapp/conversations/${id}/messages`);
+    return response.data?.data || [];
+  },
+
+  async updateConversationStatus(id, status) {
+    const response = await api.put(`/admin/whatsapp/conversations/${id}/status`, null, {
+      params: { status }
+    });
+    return response.data?.data;
+  },
+
+  async replyToConversation(id, content) {
+    const response = await api.post(`/admin/whatsapp/conversations/${id}/reply`, { content });
+    return response.data?.data;
   }
 };
 

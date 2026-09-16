@@ -1,27 +1,38 @@
 package com.sareekart.dto.whatsapp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class WhatsAppMessageRequest {
     @JsonProperty("messaging_product")
-    private final String messagingProduct = "whatsapp";
+    @Builder.Default
+    private String messagingProduct = "whatsapp";
 
     @JsonProperty("recipient_type")
-    private final String recipientType = "individual";
+    @Builder.Default
+    private String recipientType = "individual";
 
     private String to;
-    private String type;
+    private String type; // "text", "image", "template", "interactive"
 
     private Text text;
     private Template template;
     private Image image;
+    private Interactive interactive;
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Text {
         private boolean preview_url;
         private String body;
@@ -29,22 +40,113 @@ public class WhatsAppMessageRequest {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Template {
         private String name;
         private Language language;
-        // Optionally add components for variables
     }
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Language {
         private String code;
     }
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Image {
         private String link;
         private String caption;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Interactive {
+        private String type; // "button" or "list"
+        private InteractiveHeader header;
+        private InteractiveBody body;
+        private InteractiveFooter footer;
+        private InteractiveAction action;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InteractiveHeader {
+        private String type; // "text" or "image"
+        private String text;
+        private Image image;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InteractiveBody {
+        private String text;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InteractiveFooter {
+        private String text;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InteractiveAction {
+        private String button; // Label for list button
+        private List<InteractiveButton> buttons; // For button type
+        private List<InteractiveSection> sections; // For list type
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InteractiveButton {
+        @Builder.Default
+        private String type = "reply";
+        private Reply reply;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Reply {
+        private String id;
+        private String title;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InteractiveSection {
+        private String title;
+        private List<InteractiveRow> rows;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InteractiveRow {
+        private String id;
+        private String title;
+        private String description;
     }
 }
