@@ -1,10 +1,14 @@
 package com.sareekart.service.impl;
 
+import com.sareekart.dto.internal.StylistIntent;
 import com.sareekart.dto.request.ConsultationQuizRequest;
 import com.sareekart.dto.request.DrapeStyleRequest;
+import com.sareekart.dto.request.StylistChatRequest;
 import com.sareekart.dto.response.AiStylistTelemetryResponse;
 import com.sareekart.dto.response.DrapeStyleResponse;
 import com.sareekart.dto.response.ProductResponse;
+import com.sareekart.dto.response.ScoredProductResponse;
+import com.sareekart.dto.response.StylistChatResponse;
 import com.sareekart.entity.AiStyleConsultation;
 import com.sareekart.entity.Product;
 import com.sareekart.entity.User;
@@ -12,8 +16,13 @@ import com.sareekart.mapper.ProductMapper;
 import com.sareekart.repository.AiStyleConsultationRepository;
 import com.sareekart.repository.ProductRepository;
 import com.sareekart.service.AiStylistService;
+import com.sareekart.service.StylistGroundingService;
+import com.sareekart.service.StylistIntentExtractor;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,8 +44,29 @@ public class AiStylistServiceImpl implements AiStylistService {
     private final AiStyleConsultationRepository consultationRepository;
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final StylistIntentExtractor stylistIntentExtractor;
+    private final StylistGroundingService stylistGroundingService;
+
+    @Autowired(required = false)
+    private ChatClient chatClient;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm");
+    private static final Pattern SAREE_TAG_PATTERN = Pattern.compile("\\[SAREE-(\\d+)\\]");
+
+    private final ExecutorService stylistExecutor = Executors.newFixedThreadPool(4);
+
+    @PreDestroy
+    public void cleanup() {
+        try {
+            stylistExecutor.shutdown();
+            if (!stylistExecutor.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+                stylistExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            stylistExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
 
     @Override
     public DrapeStyleResponse generateDrapeStyling(DrapeStyleRequest request, User user) {
@@ -101,7 +134,6 @@ public class AiStylistServiceImpl implements AiStylistService {
         }
 
         String preferredWeave = request.getPreferredWeave() != null ? request.getPreferredWeave().toUpperCase() : "ANY";
-        String occasion = request.getOccasion() != null ? request.getOccasion().toLowerCase() : "";
 
         List<Product> matched = activeProducts.stream()
                 .filter(p -> {
@@ -133,6 +165,193 @@ public class AiStylistServiceImpl implements AiStylistService {
         }
 
         return matched.stream().map(productMapper::toResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public StylistChatResponse chatWithStylist(StylistChatRequest request, User user) {
+        log.info("Patron initiated AI Stylist conversation: query='{}', session='{}'", 
+                request.getMessage(), request.getSessionId());
+
+        // Step 1: Extract structured shopping and styling intent
+        StylistIntent intent = stylistIntentExtractor.extractIntent(request.getMessage(), request);
+
+        // Step 2: Gate 1 Authoritative MySQL Grounding (Pre-retrieval candidate pool)
+        List<ScoredProductResponse> candidates = stylistGroundingService.retrieveGroundedCandidates(
+                intent,
+                request.getSessionId(),
+                user != null ? user.getId() : null,
+                6
+        );
+
+        // Determine primary product context
+        Product primaryProduct = null;
+        if (request.getReferenceProductId() != null) {
+            primaryProduct = productRepository.findByIdAndActiveTrue(request.getReferenceProductId()).orElse(null);
+        }
+        if (primaryProduct == null && !candidates.isEmpty()) {
+            primaryProduct = productRepository.findById(candidates.get(0).getProduct().getId()).orElse(null);
+        }
+
+        String fabric = intent.getPreferredFabric() != null 
+                ? intent.getPreferredFabric() 
+                : (primaryProduct != null && primaryProduct.getFabric() != null ? primaryProduct.getFabric() : "Pure Mulberry Silk");
+
+        String primaryColor = intent.getPreferredColor() != null 
+                ? intent.getPreferredColor() 
+                : (primaryProduct != null && primaryProduct.getColor() != null ? primaryProduct.getColor() : "Maroon");
+
+        String occasion = intent.getOccasion() != null 
+                ? intent.getOccasion() 
+                : "Festive & Wedding Celebration";
+
+        // Build deterministic curated ensembles
+        List<DrapeStyleResponse.EnsembleLook> looks = buildCuratedLooks(fabric, primaryColor, occasion, "Pure Gold Zari");
+        DrapeStyleResponse.EnsembleLook primaryLook = looks.get(0);
+
+        String replyText = null;
+        boolean fallbackUsed = false;
+
+        // Step 3: LLM Styling Reasoning with 1,500ms SLA Timeout
+        if (chatClient != null && !candidates.isEmpty()) {
+            try {
+                Future<String> future = stylistExecutor.submit(() -> callChatClient(request.getMessage(), candidates, primaryLook, occasion));
+                replyText = future.get(1500, TimeUnit.MILLISECONDS);
+
+                // Gate 2: Post-Generation Hallucination Guard
+                replyText = validateAndSanitizeLlmResponse(replyText, candidates);
+            } catch (TimeoutException te) {
+                log.warn("AI Stylist LLM SLA timeout exceeded (>1,500ms); falling back to curated looks");
+                fallbackUsed = true;
+            } catch (Exception e) {
+                log.warn("AI Stylist LLM unavailable ({}); falling back to curated looks", e.getMessage());
+                fallbackUsed = true;
+            }
+        } else {
+            fallbackUsed = true;
+        }
+
+        // Step 4: Deterministic Fallback if LLM timed out or failed
+        if (fallbackUsed || replyText == null || replyText.isBlank()) {
+            replyText = buildFallbackReply(intent, primaryLook, candidates, primaryProduct, occasion);
+            fallbackUsed = true;
+        }
+
+        // Step 5: Save consultation record for Bespoke Tailoring Studio continuity
+        AiStyleConsultation consultation = AiStyleConsultation.builder()
+                .user(user)
+                .product(primaryProduct)
+                .sareeName(primaryProduct != null ? primaryProduct.getName() : "Artisanal Silk Saree")
+                .fabric(fabric)
+                .primaryColor(primaryColor)
+                .occasion(occasion)
+                .chosenLookTitle(primaryLook.getTitle())
+                .contrastColor(primaryLook.getBlouse().getContrastColor())
+                .blouseStyle(primaryLook.getBlouse().getBlouseStyle())
+                .jewelryRecommendation(primaryLook.getJewelry().getCategory())
+                .convertedToTailoring(false)
+                .build();
+
+        AiStyleConsultation saved = consultationRepository.save(consultation);
+
+        String detectedBudget = intent.getMaxPrice() != null ? "Under ₹" + intent.getMaxPrice().toPlainString() : null;
+
+        return StylistChatResponse.builder()
+                .reply(replyText)
+                .recommendedSarees(candidates)
+                .primaryLook(primaryLook)
+                .consultationId(saved.getId())
+                .fallbackUsed(fallbackUsed)
+                .detectedOccasion(intent.getOccasion())
+                .detectedFabric(intent.getPreferredFabric())
+                .detectedBudget(detectedBudget)
+                .build();
+    }
+
+    private String callChatClient(String userMessage, List<ScoredProductResponse> candidates, DrapeStyleResponse.EnsembleLook look, String occasion) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("You are the master AI Luxury Saree Stylist and Drape Concierge for SareeKart, an artisanal Indian haute couture atelier.\n");
+        sb.append("Your duty is to advise the patron with cultural grace, handloom sophistication, and impeccable color harmony.\n\n");
+        sb.append("MANDATORY GROUNDING RULES:\n");
+        sb.append("1. You must ONLY recommend sarees from the VERIFIED CANDIDATE LIST below. Cite each chosen saree as [SAREE-{id}].\n");
+        sb.append("2. NEVER invent a saree ID, fabric, or price not in the list.\n");
+        sb.append("3. Incorporate the contrast blouse coordinates: Color '").append(look.getBlouse().getContrastColor())
+                .append("', Fabric '").append(look.getBlouse().getFabric())
+                .append("', Neckline '").append(look.getBlouse().getFrontNeck()).append("'.\n");
+        sb.append("4. Recommend jewelry: '").append(look.getJewelry().getCategory()).append("'.\n");
+        sb.append("5. Mention the drape technique: '").append(look.getDrapingTechnique()).append("'.\n\n");
+        sb.append("VERIFIED CANDIDATE LIST:\n");
+
+        for (ScoredProductResponse c : candidates) {
+            ProductResponse p = c.getProduct();
+            sb.append("- [SAREE-").append(p.getId()).append("]: \"").append(p.getName())
+                    .append("\", Fabric: ").append(p.getFabric())
+                    .append(", Color: ").append(p.getColor())
+                    .append(", Price: ₹").append(p.getPrice()).append("\n");
+        }
+
+        return chatClient.prompt()
+                .system(sb.toString())
+                .user(userMessage)
+                .call()
+                .content();
+    }
+
+    /**
+     * Gate 2 Post-Processing: Validates that all [SAREE-id] tags in LLM output match the verified candidates whitelist.
+     * Strips any hallucinated product IDs.
+     */
+    private String validateAndSanitizeLlmResponse(String rawResponse, List<ScoredProductResponse> candidates) {
+        if (rawResponse == null) return "";
+        Set<Long> allowedIds = candidates.stream()
+                .map(c -> c.getProduct().getId())
+                .collect(Collectors.toSet());
+
+        Matcher matcher = SAREE_TAG_PATTERN.matcher(rawResponse);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            try {
+                Long citedId = Long.parseLong(matcher.group(1));
+                if (allowedIds.contains(citedId)) {
+                    matcher.appendReplacement(sb, matcher.group(0)); // Keep valid
+                } else {
+                    // Hallucinated ID detected! Strip citation tag to preserve truthfulness
+                    log.warn("Dual-Gate Guard detected hallucinated product citation [SAREE-{}]; removing from text", citedId);
+                    matcher.appendReplacement(sb, "");
+                }
+            } catch (NumberFormatException e) {
+                matcher.appendReplacement(sb, "");
+            }
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    private String buildFallbackReply(StylistIntent intent, DrapeStyleResponse.EnsembleLook look, 
+                                      List<ScoredProductResponse> candidates, Product primaryProduct, String occasion) {
+        StringBuilder sb = new StringBuilder();
+        String sareeTitle = primaryProduct != null ? primaryProduct.getName() : "Artisanal Heritage Saree";
+        String sareeTag = primaryProduct != null ? " [SAREE-" + primaryProduct.getId() + "]" : "";
+
+        sb.append("Namaste! For your **").append(occasion).append("**, our atelier concierge recommends pairing the **")
+                .append(sareeTitle).append("**").append(sareeTag).append(" with an exquisite **")
+                .append(look.getBlouse().getContrastColor()).append("** blouse crafted from ")
+                .append(look.getBlouse().getFabric()).append(".\n\n");
+
+        sb.append("### ✨ Haute Couture Stylist Ensemble\n");
+        sb.append("• **Contrast Blouse**: ").append(look.getBlouse().getContrastColor())
+                .append(" (").append(look.getBlouse().getFrontNeck()).append(" neckline, ")
+                .append(look.getBlouse().getSleeve()).append(" sleeve) with ").append(look.getBlouse().getRecommendedWork()).append("\n");
+        sb.append("• **Jewelry Coordination**: ").append(look.getJewelry().getCategory()).append(" (").append(look.getJewelry().getNecklace()).append(")\n");
+        sb.append("• **Draping Technique**: ").append(look.getDrapingTechnique()).append("\n");
+        sb.append("• **Styling Rationale**: ").append(look.getStylingRationale()).append("\n\n");
+
+        if (candidates.size() > 1) {
+            sb.append("We have also curated ").append(candidates.size()).append(" authentic in-stock handloom masterpieces from our catalog matching your preferences below. You can customize the blouse directly in our **Bespoke Tailoring Studio**!");
+        } else {
+            sb.append("You can customize this blouse directly with our master karigars in the **Bespoke Tailoring Studio** below!");
+        }
+
+        return sb.toString();
     }
 
     @Override

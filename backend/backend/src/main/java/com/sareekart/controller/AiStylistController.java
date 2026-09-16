@@ -2,9 +2,11 @@ package com.sareekart.controller;
 
 import com.sareekart.dto.request.ConsultationQuizRequest;
 import com.sareekart.dto.request.DrapeStyleRequest;
+import com.sareekart.dto.request.StylistChatRequest;
 import com.sareekart.dto.response.ApiResponse;
 import com.sareekart.dto.response.DrapeStyleResponse;
 import com.sareekart.dto.response.ProductResponse;
+import com.sareekart.dto.response.StylistChatResponse;
 import com.sareekart.entity.User;
 import com.sareekart.service.AiStylistService;
 import jakarta.validation.Valid;
@@ -40,6 +42,15 @@ public class AiStylistController {
         log.info("Client submitted AI style consultation quiz for occasion: {}", request.getOccasion());
         List<ProductResponse> matches = aiStylistService.consultStyleQuiz(request);
         return ResponseEntity.ok(ApiResponse.success("Style consultation matches retrieved", matches));
+    }
+
+    @PostMapping("/chat")
+    public ResponseEntity<ApiResponse<StylistChatResponse>> chatWithStylist(
+            @Valid @RequestBody StylistChatRequest request,
+            @AuthenticationPrincipal User user) {
+        log.info("Client initiated AI stylist chat session: {}", request.getSessionId());
+        StylistChatResponse response = aiStylistService.chatWithStylist(request, user);
+        return ResponseEntity.ok(ApiResponse.success("AI stylist consultation generated successfully", response));
     }
 
     @PostMapping("/track-tailoring/{consultationId}")

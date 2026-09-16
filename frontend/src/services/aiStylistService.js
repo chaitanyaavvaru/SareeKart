@@ -22,6 +22,22 @@ export const aiStylistService = {
   },
 
   /**
+   * Converse with AI Luxury Saree Stylist Concierge in natural language
+   * @param {Object} chatData - { message, sessionId, referenceProductId, occasion, budgetRange, preferredWeave, conversationHistory }
+   */
+  async chat(chatData) {
+    try {
+      const response = await api.post('/ai/stylist/chat', chatData);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  },
+
+  /**
    * Submit occasion and undertone consultation quiz
    * @param {Object} quizData - { occasion, skinUndertone, preferredWeave, budgetRange }
    */

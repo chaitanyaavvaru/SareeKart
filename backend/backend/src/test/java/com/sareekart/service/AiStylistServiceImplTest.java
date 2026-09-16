@@ -1,10 +1,10 @@
 package com.sareekart.service;
 
+import com.sareekart.dto.internal.StylistIntent;
 import com.sareekart.dto.request.ConsultationQuizRequest;
 import com.sareekart.dto.request.DrapeStyleRequest;
-import com.sareekart.dto.response.AiStylistTelemetryResponse;
-import com.sareekart.dto.response.DrapeStyleResponse;
-import com.sareekart.dto.response.ProductResponse;
+import com.sareekart.dto.request.StylistChatRequest;
+import com.sareekart.dto.response.*;
 import com.sareekart.entity.AiStyleConsultation;
 import com.sareekart.entity.Product;
 import com.sareekart.entity.User;
@@ -42,6 +42,12 @@ public class AiStylistServiceImplTest {
 
     @Mock
     private ProductMapper productMapper;
+
+    @Mock
+    private StylistIntentExtractor stylistIntentExtractor;
+
+    @Mock
+    private StylistGroundingService stylistGroundingService;
 
     @InjectMocks
     private AiStylistServiceImpl aiStylistService;
@@ -255,5 +261,75 @@ public class AiStylistServiceImplTest {
         assertEquals(35.0, telemetry.getTailoringConversionRatePercent());
         assertEquals(2, telemetry.getTopOccasions().size());
         assertEquals(1, telemetry.getTopStyledSarees().size());
+    }
+
+    @Test
+    @DisplayName("chatWithStylist returns deterministic fallback when LLM is offline, grounding with verified catalog sarees")
+    void testChatWithStylist_DeterministicFallback() {
+        StylistChatRequest request = StylistChatRequest.builder()
+                .message("I need a wedding saree in pink under 20000")
+                .sessionId("sess-xyz")
+                .build();
+
+        StylistIntent intent = StylistIntent.builder()
+                .queryType(StylistIntent.QueryType.FIND_SAREE)
+                .occasion("Wedding")
+                .preferredColor("pink")
+                .maxPrice(new BigDecimal("20000"))
+                .build();
+
+        when(stylistIntentExtractor.extractIntent(eq(request.getMessage()), eq(request))).thenReturn(intent);
+
+        ProductResponse pResp = ProductResponse.builder()
+                .id(101L)
+                .name("Pink Kanchipuram Silk")
+                .fabric("Kanchipuram Silk")
+                .color("Pink")
+                .price(new BigDecimal("18500.00"))
+                .build();
+
+        ScoredProductResponse candidate = ScoredProductResponse.builder()
+                .product(pResp)
+                .recommendationScore(0.95)
+                .reasons(List.of("Matches wedding occasion"))
+                .build();
+
+        when(stylistGroundingService.retrieveGroundedCandidates(eq(intent), eq("sess-xyz"), eq(1L), eq(6)))
+                .thenReturn(List.of(candidate));
+
+        Product productEntity = Product.builder()
+                .id(101L)
+                .name("Pink Kanchipuram Silk")
+                .fabric("Kanchipuram Silk")
+                .color("Pink")
+                .price(new BigDecimal("18500.00"))
+                .stockQuantity(4)
+                .active(true)
+                .build();
+
+        when(productRepository.findById(101L)).thenReturn(Optional.of(productEntity));
+
+        AiStyleConsultation savedEntity = AiStyleConsultation.builder()
+                .id(99L)
+                .user(testUser)
+                .product(productEntity)
+                .sareeName("Pink Kanchipuram Silk")
+                .convertedToTailoring(false)
+                .build();
+
+        when(consultationRepository.save(any(AiStyleConsultation.class))).thenReturn(savedEntity);
+
+        StylistChatResponse response = aiStylistService.chatWithStylist(request, testUser);
+
+        assertNotNull(response);
+        assertTrue(response.isFallbackUsed(), "Fallback should be triggered since chatClient is not active");
+        assertEquals(99L, response.getConsultationId());
+        assertEquals(1, response.getRecommendedSarees().size());
+        assertEquals(101L, response.getRecommendedSarees().get(0).getProduct().getId());
+        assertNotNull(response.getPrimaryLook());
+        assertNotNull(response.getPrimaryLook().getBlouse());
+        assertNotNull(response.getReply());
+        assertTrue(response.getReply().contains("Pink Kanchipuram Silk") || response.getReply().contains("Namaste"));
+        verify(consultationRepository).save(any(AiStyleConsultation.class));
     }
 }
