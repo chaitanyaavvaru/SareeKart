@@ -172,8 +172,17 @@ public class CustomerBehaviorServiceImpl implements CustomerBehaviorService {
             eventCountsByType.put(type.name(), count);
         }
 
-        // True 4-stage event conversion funnel
+        // True 4-stage event conversion funnel (preserved for backward compatibility)
         List<BehavioralFunnelStageDto> funnel = buildFunnel(start, end);
+
+        // Full 8-stage production eCommerce funnel
+        List<BehavioralFunnelStageDto> ecommerceFunnel = buildEcommerceFunnel(start, end);
+
+        // Auxiliary Channel Engagement metrics
+        Map<String, Long> channelEngagement = computeChannelEngagement(start, end);
+
+        // Conversion and abandonment ratios
+        Map<String, Double> funnelMetrics = computeFunnelMetrics(ecommerceFunnel);
 
         // Product engagement & search telemetry
         List<CustomerEvent> periodEvents = customerEventRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(start, end);
@@ -192,6 +201,9 @@ public class CustomerBehaviorServiceImpl implements CustomerBehaviorService {
                 .activeSessions(activeSessions)
                 .eventCountsByType(eventCountsByType)
                 .funnel(funnel)
+                .ecommerceFunnel(ecommerceFunnel)
+                .channelEngagement(channelEngagement)
+                .funnelMetrics(funnelMetrics)
                 .topProducts(topProducts)
                 .topSearches(topSearches)
                 .zeroResultSearches(zeroResultSearches)
@@ -364,8 +376,42 @@ public class CustomerBehaviorServiceImpl implements CustomerBehaviorService {
         return computeSearchTelemetry(searchEvents, zeroResultsOnly);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ConversionFunnelResponse getConversionFunnel(String range, LocalDate startDate, LocalDate endDate) {
+        AnalyticsDateRange dateRange = AnalyticsDateRange.fromString(range);
+        DateRangeWindow window = DateRangeWindow.calculate(dateRange, startDate, endDate);
+        LocalDateTime start = window.getCurrentStart();
+        LocalDateTime end = window.getCurrentEnd();
+
+        long totalEvents = customerEventRepository.countByCreatedAtBetween(start, end);
+        long activeSessions = customerEventRepository.countDistinctSessionsBetween(start, end);
+
+        List<BehavioralFunnelStageDto> stages = buildEcommerceFunnel(start, end);
+        Map<String, Long> channelEngagement = computeChannelEngagement(start, end);
+        Map<String, Double> metrics = computeFunnelMetrics(stages);
+
+        return ConversionFunnelResponse.builder()
+                .range(range)
+                .startDate(start.toLocalDate().toString())
+                .endDate(end.toLocalDate().toString())
+                .totalEvents(totalEvents)
+                .activeSessions(activeSessions)
+                .stages(stages)
+                .overallConversionRate(metrics.getOrDefault("overallConversionRate", 0.0))
+                .detailToCartRate(metrics.getOrDefault("detailToCartRate", 0.0))
+                .cartToCheckoutRate(metrics.getOrDefault("cartToCheckoutRate", 0.0))
+                .checkoutToPaymentRate(metrics.getOrDefault("checkoutToPaymentRate", 0.0))
+                .paymentToOrderRate(metrics.getOrDefault("paymentToOrderRate", 0.0))
+                .cartAbandonmentRate(metrics.getOrDefault("cartAbandonmentRate", 0.0))
+                .checkoutAbandonmentRate(metrics.getOrDefault("checkoutAbandonmentRate", 0.0))
+                .channelEngagement(channelEngagement)
+                .build();
+    }
+
     // =========================================================================
     // Helper Methods
+
     // =========================================================================
 
     private void validateRequest(CustomerEventRequest request) {
@@ -480,6 +526,111 @@ public class CustomerBehaviorServiceImpl implements CustomerBehaviorService {
         }
 
         return list;
+    }
+
+    private List<BehavioralFunnelStageDto> buildEcommerceFunnel(LocalDateTime start, LocalDateTime end) {
+        String[] stages = {
+                CustomerEventType.LANDING_PAGE_VIEW.name(),
+                CustomerEventType.PRODUCT_VIEW.name(),
+                CustomerEventType.SEARCH_QUERY.name(),
+                CustomerEventType.CATEGORY_VIEW.name(),
+                CustomerEventType.ADD_TO_CART.name(),
+                CustomerEventType.CHECKOUT_INITIATED.name(),
+                CustomerEventType.PAYMENT_ATTEMPT.name(),
+                CustomerEventType.ORDER_COMPLETED.name()
+        };
+        String[] labels = {
+                "1. Landing",
+                "2. Product View",
+                "3. Search Discovery",
+                "4. Category Browse",
+                "5. Added to Bag",
+                "6. Checkout Initiated",
+                "7. Payment Step",
+                "8. Purchase Completed"
+        };
+
+        List<BehavioralFunnelStageDto> list = new ArrayList<>();
+        long topStageSessions = 0;
+        long previousStageSessions = 0;
+
+        for (int i = 0; i < stages.length; i++) {
+            String stage = stages[i];
+            long total = customerEventRepository.countByEventTypeAndCreatedAtBetween(stage, start, end);
+            long uniqueSessions = customerEventRepository.countDistinctSessionsByEventTypeBetween(stage, start, end);
+
+            if (i == 0) {
+                topStageSessions = uniqueSessions;
+                previousStageSessions = uniqueSessions;
+            }
+
+            double fromPrev = previousStageSessions > 0
+                    ? Math.min(100.0, ((double) uniqueSessions / previousStageSessions) * 100.0)
+                    : (uniqueSessions > 0 ? 100.0 : 0.0);
+
+            double overall = topStageSessions > 0
+                    ? Math.min(100.0, ((double) uniqueSessions / topStageSessions) * 100.0)
+                    : (uniqueSessions > 0 ? 100.0 : 0.0);
+
+            list.add(BehavioralFunnelStageDto.builder()
+                    .stage(stage)
+                    .label(labels[i])
+                    .totalEvents(total)
+                    .uniqueSessions(uniqueSessions)
+                    .conversionRateFromPrevious(roundOneDecimal(fromPrev))
+                    .overallConversionRate(roundOneDecimal(overall))
+                    .build());
+
+            previousStageSessions = uniqueSessions;
+        }
+
+        return list;
+    }
+
+    private Map<String, Long> computeChannelEngagement(LocalDateTime start, LocalDateTime end) {
+        Map<String, Long> engagement = new LinkedHashMap<>();
+        engagement.put("wishlist", customerEventRepository.countByEventTypeAndCreatedAtBetween(CustomerEventType.ADD_TO_WISHLIST.name(), start, end));
+        engagement.put("recommendations", customerEventRepository.countByEventTypeAndCreatedAtBetween(CustomerEventType.RECOMMENDATION_CLICK.name(), start, end));
+        engagement.put("aiStylist", customerEventRepository.countByEventTypeAndCreatedAtBetween(CustomerEventType.AI_STYLIST_ENGAGE.name(), start, end));
+        engagement.put("whatsapp", customerEventRepository.countByEventTypeAndCreatedAtBetween(CustomerEventType.WHATSAPP_COMMERCE_ENGAGE.name(), start, end));
+        engagement.put("trousseau", customerEventRepository.countByEventTypeAndCreatedAtBetween(CustomerEventType.TROUSSEAU_ENGAGE.name(), start, end));
+        engagement.put("shareLinks", customerEventRepository.countByEventTypeAndCreatedAtBetween(CustomerEventType.SHARE_LINK_ENGAGE.name(), start, end));
+        return engagement;
+    }
+
+    private Map<String, Double> computeFunnelMetrics(List<BehavioralFunnelStageDto> stages) {
+        Map<String, Double> metrics = new LinkedHashMap<>();
+        if (stages == null || stages.size() < 8) {
+            return metrics;
+        }
+
+        long landingSessions = stages.get(0).getUniqueSessions();
+        long viewSessions = stages.get(1).getUniqueSessions();
+        long cartSessions = stages.get(4).getUniqueSessions();
+        long checkoutSessions = stages.get(5).getUniqueSessions();
+        long paymentSessions = stages.get(6).getUniqueSessions();
+        long orderSessions = stages.get(7).getUniqueSessions();
+
+        double overallConversion = landingSessions > 0 ? ((double) orderSessions / landingSessions) * 100.0 : 0.0;
+        double detailToCart = viewSessions > 0 ? ((double) cartSessions / viewSessions) * 100.0 : 0.0;
+        double cartToCheckout = cartSessions > 0 ? ((double) checkoutSessions / cartSessions) * 100.0 : 0.0;
+        double checkoutToPayment = checkoutSessions > 0 ? ((double) paymentSessions / checkoutSessions) * 100.0 : 0.0;
+        double paymentToOrder = paymentSessions > 0 ? ((double) orderSessions / paymentSessions) * 100.0 : 0.0;
+        double cartAbandonment = cartSessions > 0 ? Math.max(0.0, (1.0 - ((double) orderSessions / cartSessions)) * 100.0) : 0.0;
+        double checkoutAbandonment = checkoutSessions > 0 ? Math.max(0.0, (1.0 - ((double) orderSessions / checkoutSessions)) * 100.0) : 0.0;
+
+        metrics.put("overallConversionRate", roundOneDecimal(overallConversion));
+        metrics.put("detailToCartRate", roundOneDecimal(detailToCart));
+        metrics.put("cartToCheckoutRate", roundOneDecimal(cartToCheckout));
+        metrics.put("checkoutToPaymentRate", roundOneDecimal(checkoutToPayment));
+        metrics.put("paymentToOrderRate", roundOneDecimal(paymentToOrder));
+        metrics.put("cartAbandonmentRate", roundOneDecimal(cartAbandonment));
+        metrics.put("checkoutAbandonmentRate", roundOneDecimal(checkoutAbandonment));
+        return metrics;
+    }
+
+    private double roundOneDecimal(double val) {
+        return BigDecimal.valueOf(Math.min(100.0, Math.max(0.0, val))).setScale(1, RoundingMode.HALF_UP).doubleValue();
     }
 
     private List<TopTrendingProductDto> computeTopTrendingProducts(List<CustomerEvent> events) {

@@ -9,4 +9,6 @@ public interface PaymentService {
     PaymentOrderResponse createRazorpayOrder(Long orderId, Long userId);
 
     OrderResponse verifyPaymentSignature(PaymentVerificationRequest request, Long userId);
+
+    boolean processWebhook(String payload, String signatureHeader);
 }

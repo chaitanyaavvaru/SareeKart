@@ -74,13 +74,45 @@ class WhatsAppWebhookSignatureValidatorTest {
     }
 
     @Test
-    @DisplayName("Default dev secret allows requests without signature header")
-    void testDevSecretAllowsMissingHeader() {
-        ReflectionTestUtils.setField(validator, "appSecret", "sareekart-meta-secret-2026");
+    @DisplayName("Missing signature header always returns false — dev-bypass is removed")
+    void testMissingHeaderAlwaysRejected() {
+        // Even with a non-empty secret, a missing signature header must be rejected.
+        // This test confirms the dev-bypass (which previously allowed null headers with
+        // the default secret) has been completely removed.
         byte[] payload = "{\"test\":true}".getBytes(StandardCharsets.UTF_8);
 
         boolean valid = validator.isValid(payload, null);
 
-        assertThat(valid).isTrue();
+        assertThat(valid).isFalse();
+    }
+
+    @Test
+    @DisplayName("Old default hard-coded secret cannot bypass signature validation")
+    void testDefaultHardcodedSecretCannotBypass() {
+        // The old default sareekart-meta-secret-2026 must never grant special access.
+        // A request with the old default key but no signature must be rejected.
+        ReflectionTestUtils.setField(validator, "appSecret", "sareekart-meta-secret-2026");
+        byte[] payload = "{\"test\":true}".getBytes(StandardCharsets.UTF_8);
+
+        // Missing header → rejected
+        assertThat(validator.isValid(payload, null)).isFalse();
+
+        // Blank/malformed header → rejected
+        assertThat(validator.isValid(payload, "")).isFalse();
+        assertThat(validator.isValid(payload, "no-prefix")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Absent production secret (empty string) rejects all requests")
+    void testAbsentProductionSecretRejectsAll() throws Exception {
+        // When WHATSAPP_APP_SECRET env var is not set, the validator resolves to an empty string.
+        // The validator must reject every request rather than silently failing open.
+        ReflectionTestUtils.setField(validator, "appSecret", "");
+        byte[] payload = "{\"test\":true}".getBytes(StandardCharsets.UTF_8);
+
+        // Even a correctly formatted sha256= header is rejected when secret is absent
+        String someHash = calculateHmac(payload, "some-key");
+        assertThat(validator.isValid(payload, "sha256=" + someHash)).isFalse();
+        assertThat(validator.isValid(payload, null)).isFalse();
     }
 }

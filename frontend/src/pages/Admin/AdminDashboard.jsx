@@ -94,6 +94,7 @@ export default function AdminDashboard() {
       <SEO
         title="Admin Dashboard | SareeKart"
         description="SareeKart admin workspace for catalog, orders, customer, inventory, and sales operations."
+        noindex={true}
       />
 
       {mobileNavOpen && (

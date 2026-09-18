@@ -19,8 +19,11 @@ const StoresPage = lazy(() => import('../pages/Stores/StoresPage'));
 const HeritageWeavesPage = lazy(() => import('../pages/Heritage/HeritageWeavesPage'));
 const SareeCarePage = lazy(() => import('../pages/Care/SareeCarePage'));
 const TrousseauPlannerPage = lazy(() => import('../pages/Bridal/TrousseauPlannerPage'));
+const TrousseauStudioPage = lazy(() => import('../pages/Trousseau/TrousseauStudioPage'));
+const TrousseauSharedViewPage = lazy(() => import('../pages/Trousseau/TrousseauSharedViewPage'));
 const StylistStudioPage = lazy(() => import('../pages/Stylist/StylistStudioPage'));
 const CartPage = lazy(() => import('../pages/Cart'));
+const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('../pages/Admin/AdminDashboard'));
@@ -88,6 +91,8 @@ export default function AppRouter() {
         <Route path="heritage-weaves" element={<HeritageWeavesPage />} />
         <Route path="saree-care" element={<SareeCarePage />} />
         <Route path="trousseau-planner" element={<TrousseauPlannerPage />} />
+        <Route path="trousseau" element={<ProtectedRoute><TrousseauStudioPage /></ProtectedRoute>} />
+        <Route path="trousseau/share/:token" element={<TrousseauSharedViewPage />} />
         <Route path="stylist" element={<StylistStudioPage />} />
         
         {/* Protected Customer Routes */}
@@ -157,7 +162,10 @@ export default function AppRouter() {
         <Route path="ai-stylist" element={<AiStylistDashboard />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 Catch-All within MainLayout */}
+      <Route element={<MainLayout />}>
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
 
       </Routes>
     </Suspense>

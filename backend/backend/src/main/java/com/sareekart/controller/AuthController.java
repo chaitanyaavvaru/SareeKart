@@ -20,11 +20,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final UserService userService;
+
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
@@ -53,7 +55,7 @@ public class AuthController {
         Map<String, String> data = new HashMap<>();
         if (token != null) {
             data.put("resetToken", token);
-            data.put("resetUrl", "http://localhost:5173/reset-password?token=" + token);
+            data.put("resetUrl", frontendUrl + "/reset-password?token=" + token);
         }
         return ResponseEntity.ok(ApiResponse.success(
                 "If an account exists for this email, password reset instructions have been sent.",
@@ -81,7 +83,7 @@ public class AuthController {
         String token = userService.verifyRecoveryKeyAndGenerateResetToken(request.getEmail(), request.getRecoveryKey());
         Map<String, String> data = new HashMap<>();
         data.put("resetToken", token);
-        data.put("resetUrl", "http://localhost:5173/reset-password?token=" + token);
+        data.put("resetUrl", frontendUrl + "/reset-password?token=" + token);
         return ResponseEntity.ok(ApiResponse.success("Emergency Security Recovery Key verified successfully.", data));
     }
 }

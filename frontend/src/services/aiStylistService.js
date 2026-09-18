@@ -15,7 +15,7 @@ export const aiStylistService = {
       return response.data;
     } catch (error) {
       if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+        throw new Error(error.response.data.message, { cause: error });
       }
       throw error;
     }
@@ -31,7 +31,7 @@ export const aiStylistService = {
       return response.data;
     } catch (error) {
       if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+        throw new Error(error.response.data.message, { cause: error });
       }
       throw error;
     }
@@ -47,7 +47,7 @@ export const aiStylistService = {
       return response.data;
     } catch (error) {
       if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+        throw new Error(error.response.data.message, { cause: error });
       }
       throw error;
     }

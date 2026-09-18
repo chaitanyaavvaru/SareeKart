@@ -14,6 +14,21 @@ public interface WhatsAppIdentityService {
     String normalizePhoneNumber(String rawPhone);
 
     /**
+     * Normalizes phone to standard international E.164 format (+919876543210).
+     */
+    String normalizeToE164(String rawPhone);
+
+    /**
+     * Formats phone number for Meta WhatsApp Cloud API recipient parameter (919876543210).
+     */
+    String toMetaRecipientPhone(String rawPhone);
+
+    /**
+     * Validates whether raw phone corresponds to an active Indian mobile number (starts with 6-9).
+     */
+    boolean isValidIndianMobile(String rawPhone);
+
+    /**
      * Resolves an existing WhatsApp contact or registers a new contact record.
      */
     WhatsAppContact resolveContact(String rawPhone, String profileName);

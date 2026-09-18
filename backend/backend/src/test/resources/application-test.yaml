@@ -19,3 +19,16 @@ logging:
     com.sareekart: WARN
     org.springframework.web: WARN
     org.hibernate.SQL: WARN
+
+management:
+  health:
+    neo4j:
+      enabled: false
+
+# Test-only WhatsApp configuration — NOT production secrets
+whatsapp:
+  webhook:
+    app-secret: test-whatsapp-hmac-secret-for-unit-tests
+
+app:
+  canonical-domain: https://sareekart.com

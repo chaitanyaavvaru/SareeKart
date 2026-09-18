@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public enum CustomerEventType {
+    LANDING_PAGE_VIEW,
     PRODUCT_VIEW,
     SEARCH_QUERY,
     CATEGORY_VIEW,
@@ -13,9 +14,14 @@ public enum CustomerEventType {
     ADD_TO_WISHLIST,
     REMOVE_FROM_WISHLIST,
     CHECKOUT_INITIATED,
+    PAYMENT_ATTEMPT,
     ORDER_COMPLETED,
     AI_STYLIST_ENGAGE,
-    VISUAL_SEARCH_ENGAGE;
+    VISUAL_SEARCH_ENGAGE,
+    RECOMMENDATION_CLICK,
+    WHATSAPP_COMMERCE_ENGAGE,
+    TROUSSEAU_ENGAGE,
+    SHARE_LINK_ENGAGE;
 
     private static final Set<String> NAMES = Arrays.stream(values())
             .map(Enum::name)

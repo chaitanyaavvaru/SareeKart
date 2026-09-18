@@ -44,6 +44,7 @@ export default function ForgotPasswordPage() {
       <SEO
         title="Forgot Password | SareeKart"
         description="Reset your SareeKart password securely."
+        noindex={true}
       />
 
       <section className="section-shell grid min-h-[calc(100vh-116px)] justify-items-center gap-8 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:justify-items-stretch">

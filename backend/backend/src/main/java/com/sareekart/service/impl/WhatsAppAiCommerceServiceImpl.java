@@ -53,30 +53,38 @@ public class WhatsAppAiCommerceServiceImpl implements WhatsAppAiCommerceService 
         session.setConversationId(conversationId);
 
         // 2. Compliance: Opt-Out / Opt-In
-        if (lower.equals("stop") || lower.equals("unsubscribe")) {
+        if (lower.equals("stop") || lower.equals("unsubscribe") || lower.equals("cancel") || lower.equals("quit") || lower.equals("end")) {
+            contact.setOptedIn(false);
+            contact.setOptInUpdatedAt(java.time.LocalDateTime.now());
             if (user != null) {
                 user.setWhatsappOptIn(false);
                 userRepository.save(user);
             }
             stateManager.clearSession(normalizedPhone);
             whatsAppApiClient.sendTextMessage(normalizedPhone, 
-                    "You have been unsubscribed from SareeKart updates. Reply START anytime to reconnect with our atelier. 🙏");
+                    "You have been unsubscribed from WhatsApp notifications. Text START to resume.");
             return;
         }
 
-        if (lower.equals("start")) {
+        if (lower.equals("start") || lower.equals("unstop") || lower.equals("subscribe") || lower.equals("join") || lower.equals("yes")) {
+            contact.setOptedIn(true);
+            contact.setOptInUpdatedAt(java.time.LocalDateTime.now());
             if (user != null) {
                 user.setWhatsappOptIn(true);
                 userRepository.save(user);
             }
             whatsAppApiClient.sendTextMessage(normalizedPhone, 
-                    "Namaste! Welcome back to SareeKart. 🙏 How may our styling atelier assist you today?");
+                    "Welcome back! You are now subscribed to SareeKart updates on WhatsApp.");
             return;
         }
 
-        // 3. Fast-Path: Human Escalation
-        if (lower.contains("human") || lower.contains("agent") || lower.contains("support") 
-                || lower.contains("call me") || lower.contains("talk to someone")) {
+        if (!contact.isOptedIn()) {
+            log.info("Contact {} is opted out; suppressing automated commerce response", normalizedPhone);
+            return;
+        }
+
+        // 3. Fast-Path: Human Escalation & Frustration Sentiment Detection
+        if (isHumanEscalationOrFrustration(text, lower)) {
             WhatsAppCommerceTools.HumanHandoffResult result = commerceTools.escalateToHuman(
                     new WhatsAppCommerceTools.HumanHandoffInput(conversationId, text)
             );
@@ -288,5 +296,28 @@ public class WhatsAppAiCommerceServiceImpl implements WhatsAppAiCommerceService 
 
         // Dispatch interactive response
         whatsAppApiClient.sendInteractiveButtonsMessage(phoneNumber, sb.toString(), buttons);
+    }
+
+    private boolean isHumanEscalationOrFrustration(String text, String lower) {
+        if (text == null) return false;
+        // Human agent / stylist requests
+        if (lower.contains("human") || lower.contains("agent") || lower.contains("support")
+                || lower.contains("call me") || lower.contains("talk to someone")
+                || lower.contains("talk to stylist") || lower.contains("stylist")
+                || lower.contains("btn_human") || text.contains("💬 Talk to Stylist")
+                || lower.contains("representative") || lower.contains("manager")) {
+            return true;
+        }
+
+        // Frustration sentiment detection
+        if (lower.contains("angry") || lower.contains("furious") || lower.contains("scam")
+                || lower.contains("fraud") || lower.contains("terrible service")
+                || lower.contains("horrible") || lower.contains("worst")
+                || lower.contains("cheat") || lower.contains("useless bot")
+                || lower.contains("stop wasting my time") || lower.contains("cancel my order")
+                || lower.contains("pathetic") || lower.contains("very bad")) {
+            return true;
+        }
+        return false;
     }
 }

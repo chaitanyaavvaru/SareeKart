@@ -12,15 +12,17 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}")
+    private String allowedOrigins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173";
+
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "http://localhost:3000",
-                "http://127.0.0.1:3000"
-        ));
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

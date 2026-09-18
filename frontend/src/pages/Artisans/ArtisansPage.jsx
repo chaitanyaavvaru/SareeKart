@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Award, MapPin, Sparkles, ShieldCheck, ArrowRight, Heart, Users, Feather } from 'lucide-react';
 import SEO from '../../components/common/SEO';
+import { getCanonicalUrl } from '../../utils/seoUtils';
 import { motion } from 'framer-motion';
 
 const ARTISAN_CLUSTERS = [
@@ -91,6 +92,7 @@ export default function ArtisansPage() {
       <SEO
         title="Master Weavers & Craft Guilds | SareeKart Heritage"
         description="Meet the generational master artisans and weaving cooperatives behind SareeKart's GI-certified handloom sarees."
+        canonical={getCanonicalUrl('/artisans')}
       />
 
       {/* Hero Banner */}

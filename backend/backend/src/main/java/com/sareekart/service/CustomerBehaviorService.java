@@ -21,4 +21,7 @@ public interface CustomerBehaviorService {
     List<CustomerEventResponse> getCustomerJourney(Long userId, int limit);
 
     List<SearchQueryTelemetryDto> getSearchTelemetry(String range, LocalDate startDate, LocalDate endDate, boolean zeroResultsOnly);
+
+    ConversionFunnelResponse getConversionFunnel(String range, LocalDate startDate, LocalDate endDate);
 }
+

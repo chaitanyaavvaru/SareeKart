@@ -101,6 +101,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // PHASE 5: Idempotent order retrieval
     Optional<Order> findByUserIdAndIdempotencyKey(Long userId, String idempotencyKey);
 
+    // PHASE 13: Razorpay webhook & async payment order lookup
+    Optional<Order> findByRazorpayOrderId(String razorpayOrderId);
+
     // PHASE 5: Sweep for abandoned PENDING orders
     List<Order> findByStatusAndPaymentStatusAndCreatedAtBefore(
             OrderStatus status,

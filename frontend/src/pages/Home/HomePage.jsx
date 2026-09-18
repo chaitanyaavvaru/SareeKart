@@ -8,7 +8,9 @@ import api from '../../api/axiosConfig';
 import productService from '../../services/productService';
 import ProductGrid from '../../components/ProductGrid';
 import SEO from '../../components/common/SEO';
+import { getCanonicalUrl, toAbsoluteImageUrl } from '../../utils/seoUtils';
 import { HOMEPAGE_PRODUCTS } from '../../data/products';
+import eventTracker from '../../utils/eventTracker';
 
 const imagePool = HOMEPAGE_PRODUCTS.map((product) => product.image);
 
@@ -114,6 +116,10 @@ export default function HomePage() {
   }, [user]);
 
   useEffect(() => {
+    eventTracker.trackLanding({ source: 'homepage' });
+  }, []);
+
+  useEffect(() => {
     const timer = window.setInterval(() => {
       setActiveHero((current) => (current + 1) % heroStories.length);
     }, 8000);
@@ -144,8 +150,29 @@ export default function HomePage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-[#17211F]">
       <SEO
-        title="SareeKart | The Handloom Edit"
-        description="Discover handloom sarees across Kanchipuram, Banarasi, Paithani, cotton, organza, and more at SareeKart."
+        title="SareeKart | Luxury Indian Handloom Sarees"
+        description="Discover authenticated handloom sarees across Kanchipuram, Banarasi, Paithani, cotton, and organza directly from master weavers at SareeKart."
+        canonical={getCanonicalUrl('/')}
+        schemaData={[
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "SareeKart",
+            "url": getCanonicalUrl('/'),
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": `${getCanonicalUrl('/products')}?search={search_term_string}`,
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "SareeKart Handlooms",
+            "url": getCanonicalUrl('/'),
+            "logo": toAbsoluteImageUrl('/favicon.svg')
+          }
+        ]}
       />
 
       <section className="bg-[#F7F4EE] py-3 sm:py-4">

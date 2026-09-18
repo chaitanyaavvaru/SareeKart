@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import SEO from '../../components/common/SEO';
+import { getCanonicalUrl } from '../../utils/seoUtils';
 
 const CARE_COMMANDMENTS = [
   {
@@ -90,6 +91,7 @@ export default function SareeCarePage() {
       <SEO
         title="Pure Silk & Heirloom Saree Care Guide | SareeKart"
         description="Master artisan guide to preserving heirloom pure silk and zari sarees. Expert advice on muslin wrapping, zari refolding, stain emergencies, and restoration."
+        canonical={getCanonicalUrl('/saree-care')}
       />
 
       {/* Hero */}

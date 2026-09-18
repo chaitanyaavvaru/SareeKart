@@ -240,3 +240,66 @@ Integrity mode: development
 
 ### Storage & Resource Constraints
 - [ ] Free disk space maintained >= 30% (~70+ GiB available on `/System/Volumes/Data`) via `~/scripts/check_disk_health.sh`.
+
+## 2026-09-17T11:21:27Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full multi-agent team
+
+Execute Phase 13 Stage 4 (WhatsApp Production Readiness) for SareeKart luxury e-commerce. Audit, harden, and verify the Meta WhatsApp Cloud API integration, HMAC-SHA256 signature verification, opt-in/STOP/START regulatory compliance, message templates, rate limiting, and failure isolation.
+
+Working directory: /Users/chaitanyachaitu/Downloads/SareeKart-main
+Integrity mode: development
+
+---
+
+## Requirements
+
+### R1. Meta WhatsApp Webhook Security & Signature Hardening
+- Webhook endpoints (`GET /api/webhook/whatsapp` and `POST /api/webhook/whatsapp`) must be fully compliant with Meta Graph API v19.0.
+- `GET` verification must validate `hub.verify_token` against `WHATSAPP_WEBHOOK_VERIFY_TOKEN` and return `hub.challenge`.
+- `POST` ingestion must strictly validate `X-Hub-Signature-256` using HMAC-SHA256 against `WHATSAPP_APP_SECRET`. Forged, tampered, or missing signatures in production must be rejected with HTTP 401/403.
+- In-memory and persistent idempotency: Every incoming message (`wam_id`) must be deduplicated via `WhatsAppIdempotencyService` to prevent duplicate AI agent runs or message replies.
+
+### R2. Regulatory Compliance: Opt-In, STOP, and START Protocol
+- Enforce strict customer consent lifecycle:
+  - When customer texts `STOP`, `UNSUBSCRIBE`, or `CANCEL`, update `WhatsAppContact.optedIn = false` and suppress all promotional and automated outbound messages.
+  - When customer texts `START` or `UNSTOP`, restore `WhatsAppContact.optedIn = true` with a polite welcome confirmation.
+  - Outbound order notification triggers (`OrderNotificationService`, `WhatsAppNotificationService`) must verify contact opt-in status before sending marketing or non-critical messages.
+
+### R3. Message Templates & Phone Number Normalization
+- Phone normalization: E.164 and Indian mobile formats (`+91`, `91`, leading `0`, 10 digits) must normalize consistently via `WhatsAppIdentityService`.
+- Pre-approved Meta HSM message templates (Order Placed, Shipped, Delivered, Return Pickup) must be defined with dynamic parameter substitution and validated against template variables.
+- Sensitive data masking: Never transmit JWT tokens, passwords, raw customer credit cards, or internal database primary keys in outbound WhatsApp payloads.
+
+### R4. Failure Isolation, Rate Limiting & Admin Escalation
+- Resilient failure domain: If Meta WhatsApp Cloud API is unreachable or rate-limited (HTTP 429 / 5xx), all core ecommerce operations (Order checkout, catalog browsing, cart) must continue uninterrupted.
+- Rate limiting & backoff: Outbound messages must be throttled per recipient and adhere to Meta tier throughput limits.
+- Human-in-the-loop escalation: When a customer asks for a human agent or sentiment analysis detects high frustration, conversation status transitions from `BOT_HANDLING` to `HUMAN_ESCALATION`, notifying staff via WebSocket on `/topic/admin/inbox`.
+
+### R5. Isolation of Bridal Trousseau WhatsApp Integration
+- Verify that Phase 11 Bridal Trousseau WhatsApp collaboration (`TrousseauWhatsAppService`) remains cleanly isolated from standard commerce messaging, using dedicated share tokens without cross-contamination of conversation threads.
+
+---
+
+## Acceptance Criteria
+
+### Automated Backend Verification
+- [ ] Comprehensive unit & integration tests authored in `WhatsAppProductionReadinessTest.java`:
+  - `GET /api/webhook/whatsapp` returns 200 with challenge on valid token, 403 on invalid.
+  - `POST /api/webhook/whatsapp` rejects invalid/forged `X-Hub-Signature-256` HMAC.
+  - Duplicate `wam_id` messages are dropped idempotently without duplicate replies.
+  - Incoming `STOP` keyword flips contact `optedIn` to `false` and halts automated responses.
+  - Incoming `START` keyword restores `optedIn` to `true`.
+  - Phone numbers normalize correctly across `+91`, `91`, and 10-digit variants.
+  - Outbound notification failure does NOT roll back or abort order placement transactions.
+- [ ] Full backend regression: `./mvnw test` passing 100% (478+ tests passing, 0 failures, 0 errors).
+
+### Production Build & Storage Gates
+- [ ] Production frontend build passes (`cd frontend && npm run build`) with all chunks strictly `< 500 kB`.
+- [ ] System maintains `>= 30%` free disk space verified via `~/scripts/check_disk_health.sh`.
+- [ ] No WhatsApp production secrets committed to Git repository.
+- [ ] Audit and verification report authored in `docs/phase-13-stage-4-whatsapp-readiness-audit.md`.

@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/payments")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class PaymentController {
 
@@ -34,5 +33,13 @@ public class PaymentController {
             @Valid @RequestBody PaymentVerificationRequest request) {
         OrderResponse response = paymentService.verifyPaymentSignature(request, user.getId());
         return ResponseEntity.ok(ApiResponse.success("Payment verified and order confirmed successfully", response));
+    }
+
+    @PostMapping("/webhook")
+    public ResponseEntity<ApiResponse<String>> handleWebhook(
+            @RequestHeader(value = "X-Razorpay-Signature", required = false) String signature,
+            @RequestBody String payload) {
+        paymentService.processWebhook(payload, signature);
+        return ResponseEntity.ok(ApiResponse.success("Razorpay webhook processed successfully", "OK"));
     }
 }

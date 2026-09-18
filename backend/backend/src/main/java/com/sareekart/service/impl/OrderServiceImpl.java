@@ -225,8 +225,12 @@ public class OrderServiceImpl implements OrderService {
         cart.getItems().clear();
         cartRepository.save(cart);
 
-        // Send WhatsApp notification
-        notificationService.sendOrderPlacedNotification(savedOrder);
+        // Send WhatsApp notification — isolated from checkout transaction
+        try {
+            notificationService.sendOrderPlacedNotification(savedOrder);
+        } catch (Exception e) {
+            log.error("Outbound WhatsApp alert failed for order #{}, isolating error: {}", savedOrder.getId(), e.getMessage());
+        }
 
         return orderMapper.toResponse(savedOrder);
     }
@@ -289,8 +293,12 @@ public class OrderServiceImpl implements OrderService {
             
             Order updatedOrder = orderRepository.save(order);
             
-            // Send WhatsApp notification
-            notificationService.sendOrderStatusUpdateNotification(updatedOrder);
+            // Send WhatsApp notification — isolated from order status update transaction
+            try {
+                notificationService.sendOrderStatusUpdateNotification(updatedOrder);
+            } catch (Exception e) {
+                log.error("Failed to send WhatsApp order status alert for order #{}, isolating error: {}", updatedOrder.getId(), e.getMessage());
+            }
 
             return orderMapper.toResponse(updatedOrder);
         } catch (IllegalArgumentException e) {

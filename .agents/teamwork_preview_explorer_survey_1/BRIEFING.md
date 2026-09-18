@@ -1,43 +1,51 @@
-# BRIEFING — 2026-09-03T10:29:00Z
+# BRIEFING — 2026-09-17T11:27:00Z
 
 ## Mission
-Survey SareeKart backend architecture, build tooling, test suites, database configurations, health checks, and offline boundaries.
+Survey SareeKart backend codebase for Requirement R1: Meta WhatsApp Webhook Security & Signature Hardening.
 
 ## 🔒 My Identity
 - Archetype: explorer
-- Roles: survey, investigation, synthesis
+- Roles: [explorer, synthesis]
 - Working directory: /Users/chaitanyachaitu/Downloads/SareeKart-main/.agents/teamwork_preview_explorer_survey_1
-- Original parent: e4adc674-e9a3-41a5-bba8-2bbc271432c2
-- Milestone: survey
+- Original parent: 3bf2798a-4ab9-4e27-be53-249dcd6c7927
+- Milestone: Phase 13 Stage 4 Survey - Requirement R1
 
 ## 🔒 Key Constraints
 - Read-only investigation — do NOT implement
-- Strict local isolation & zero internet exposure
-- Localhost only (port 8081, port 5173, port 3306/3307)
-- Write only inside working directory (/Users/chaitanyachaitu/Downloads/SareeKart-main/.agents/teamwork_preview_explorer_survey_1/)
+- Maintain >= 30% free disk space
+- Target codebase: /Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend
+- Output detailed survey report to survey_report.md
+- Produce handoff.md and progress.md in working directory
+- Communicate completion and findings to parent orchestrator via send_message
 
 ## Current Parent
-- Conversation ID: e4adc674-e9a3-41a5-bba8-2bbc271432c2
-- Updated: 2026-09-03T10:29:00Z
+- Conversation ID: 3bf2798a-4ab9-4e27-be53-249dcd6c7927
+- Updated: 2026-09-17T11:27:00Z
 
 ## Investigation State
-- **Explored paths**: `ORIGINAL_REQUEST.md`, `DISPATCH.md`, `manage.sh`, `docker-compose.yml`, `README.md`, `backend/backend/pom.xml`, `backend/backend/src/main/resources/application.yaml`, `backend/backend/src/test/resources/application-test.yaml`, `backend/backend/src/test/java/**`, `backend/backend/src/main/java/com/sareekart/**`
+- **Explored paths**:
+  - `WhatsAppWebhookController.java`
+  - `WhatsAppWebhookSignatureValidator.java`
+  - `WhatsAppWebhookService.java`
+  - `WhatsAppIdempotencyService.java` / `WhatsAppIdempotencyServiceImpl.java`
+  - `SecurityConfig.java`
+  - `application.yaml`, `application-prod.yaml`, `application-test.yaml`
+  - Existing test suite (`WhatsAppWebhookControllerTest.java`, `WhatsAppWebhookSignatureValidatorTest.java`, `WhatsAppIdempotencyServiceTest.java`)
 - **Key findings**:
-  - Active backend is in `backend/backend/` using Spring Boot 3.5.15, Spring 6.2.19, Java 17.
-  - Test suite has 18 tests across 6 classes; passes 100% with `./mvnw test` and `./mvnw test -o`.
-  - Database configured on port 3306 with Hibernate `ddl-auto: update` and `DataSeeder`. Port 3307 is not used. Flyway is not present.
-  - In-memory H2 profile (`test`) isolates backend unit/integration tests from MySQL.
-  - Health check endpoint `http://localhost:8081/api/products` is public (`permitAll()`), active, and returns HTTP 200 OK with product catalog.
-  - All operations comply with strict local offline isolation.
-- **Unexplored areas**: None within backend survey scope.
+  - GET `/api/webhook/whatsapp` complies with Meta Graph API v19.0.
+  - `application.yaml` lacks `whatsapp.webhook.app-secret: ${WHATSAPP_APP_SECRET:...}` binding.
+  - `WhatsAppWebhookSignatureValidator` has a dev-mode bypass allowing missing signatures when default key is active.
+  - Dual-tier idempotency (ConcurrentHashMap + MySQL) works, but lacks failure lock release.
+  - Deliverable `WhatsAppProductionReadinessTest.java` is missing and must be created.
+- **Unexplored areas**: None for Requirement R1; survey is complete.
 
 ## Key Decisions Made
-- Confirmed port 3306 is the actual configured DB port for this repo (resolving discrepancy with user reference to 3307).
-- Verified test suite passes in offline mode (`-o`).
-- Documented findings in `survey_backend.md`.
+- Scoped investigation strictly to Requirement R1 components (endpoints, HMAC verification, secret configs, idempotency, tests)
+- Completed execution of 15 baseline unit tests (100% pass) and verified storage health (> 46% free space)
 
 ## Artifact Index
-- `DISPATCH.md` — Task instructions and dispatch prompts
-- `progress.md` — Liveness heartbeat and milestone tracking
-- `survey_backend.md` — Comprehensive survey report
-- `handoff.md` — 5-component handoff report for parent agent
+- DISPATCH.md — Initial dispatch log
+- BRIEFING.md — Persistent working memory index
+- progress.md — Liveness heartbeat and progress tracking
+- survey_report.md — Comprehensive technical survey report for Requirement R1
+- handoff.md — 5-component handoff report

@@ -91,6 +91,7 @@ export default function RegisterPage() {
       <SEO
         title="Your Edit Starts Here | SareeKart"
         description="Create a SareeKart account to save the drapes you love and move through checkout with less fuss."
+        noindex={true}
       />
 
       <section className="section-shell grid min-h-[calc(100vh-116px)] justify-items-center gap-8 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:justify-items-stretch">

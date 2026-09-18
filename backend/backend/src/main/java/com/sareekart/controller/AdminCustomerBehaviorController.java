@@ -1,10 +1,7 @@
 package com.sareekart.controller;
 
 import com.sareekart.dto.response.ApiResponse;
-import com.sareekart.dto.response.customer.BehavioralOverviewResponse;
-import com.sareekart.dto.response.customer.CustomerAffinityResponse;
-import com.sareekart.dto.response.customer.CustomerEventResponse;
-import com.sareekart.dto.response.customer.SearchQueryTelemetryDto;
+import com.sareekart.dto.response.customer.*;
 import com.sareekart.service.CustomerBehaviorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,7 +16,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/customer-behavior")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'ADMIN')")
 @Tag(name = "Admin Customer Behavior", description = "Behavioral telemetry, event conversion funnel, search intelligence, and customer affinities")
@@ -66,4 +62,16 @@ public class AdminCustomerBehaviorController {
         List<SearchQueryTelemetryDto> responses = customerBehaviorService.getSearchTelemetry(range, startDate, endDate, zeroResultsOnly);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
+
+    @GetMapping("/funnel")
+    @Operation(summary = "Get full 8-stage eCommerce conversion funnel and channel engagement attributions")
+    public ResponseEntity<ApiResponse<ConversionFunnelResponse>> getConversionFunnel(
+            @RequestParam(defaultValue = "30D") String range,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        ConversionFunnelResponse response = customerBehaviorService.getConversionFunnel(range, startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }
+

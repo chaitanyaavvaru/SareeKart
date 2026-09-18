@@ -242,6 +242,7 @@ export default function TrackOrderPage() {
       <SEO
         title="Track Your Order | SareeKart Luxury Handlooms"
         description="Real-time shipment tracking, courier milestones, and delivery updates for your authentic handloom sarees."
+        noindex={true}
       />
 
       {/* Hero Header */}

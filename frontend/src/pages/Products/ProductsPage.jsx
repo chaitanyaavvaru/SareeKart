@@ -9,6 +9,7 @@ import lookupService from '../../services/lookupService';
 import ProductCard from '../../components/ProductCard';
 import Pagination from '../../components/common/Pagination';
 import SEO from '../../components/common/SEO';
+import { getCanonicalUrl, truncateDescription } from '../../utils/seoUtils';
 import { closeAddedModal, setCartOpen } from '../../redux/slices/cartSlice';
 import { fetchProducts } from '../../redux/slices/productSlice';
 import MobileFilterDrawer from '../../components/product/MobileFilterDrawer';
@@ -279,11 +280,64 @@ export default function ProductsPage() {
     },
   ].filter(Boolean);
 
+  const selectedCatObj = categories.find((c) => c.slug === selectedCategory || c.name === selectedCategory);
+  const isCategorySelected = selectedCategory && selectedCategory !== 'All';
+  const hasFacetedFilters = Boolean(
+    searchQuery ||
+    (selectedFabric && selectedFabric !== 'All') ||
+    (selectedOccasion && selectedOccasion !== 'All') ||
+    (selectedColorFamily && selectedColorFamily !== 'All') ||
+    (priceRange && priceRange !== 'All') ||
+    inStockOnly ||
+    page > 0 ||
+    sortBy !== 'createdAt'
+  );
+
+  const canonicalUrl = isCategorySelected
+    ? getCanonicalUrl('/products', { category: selectedCatObj?.slug || selectedCategory }, ['category'])
+    : getCanonicalUrl('/products');
+
+  const seoTitle = isCategorySelected
+    ? `${selectedCatObj?.name || selectedCategory} Sarees | Pure Silk & Handloom | SareeKart`
+    : (hasFacetedFilters ? 'Curated Handloom Sarees Collection | SareeKart' : 'Luxury Indian Handloom Sarees Catalog | SareeKart');
+
+  const seoDescription = isCategorySelected
+    ? truncateDescription(selectedCatObj?.description || `Explore authentic handwoven ${selectedCatObj?.name || selectedCategory} sarees directly from master artisan clusters at SareeKart.`)
+    : 'Browse SareeKart\'s authentic collection of certified handwoven sarees: Banarasi, Kanchipuram, Chanderi, and Tussar silk directly from master weavers.';
+
+  const categoryBreadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": getCanonicalUrl('/')
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Catalog",
+        "item": getCanonicalUrl('/products')
+      },
+      ...(isCategorySelected ? [{
+        "@type": "ListItem",
+        "position": 3,
+        "name": selectedCatObj?.name || selectedCategory,
+        "item": canonicalUrl
+      }] : [])
+    ]
+  };
+
   return (
     <div className="min-h-screen bg-[#F7F4EE] text-[#17211F]">
       <SEO
-        title="The Edit | SareeKart Handloom Sarees"
-        description="Browse SareeKart handloom sarees by category, fabric, occasion, price, and color mood."
+        title={seoTitle}
+        description={seoDescription}
+        canonical={canonicalUrl}
+        noindex={hasFacetedFilters}
+        schemaData={categoryBreadcrumbSchema}
       />
 
       <section className="bg-white">

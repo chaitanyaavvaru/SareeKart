@@ -94,6 +94,7 @@ export default function Cart() {
       <SEO
         title="Shopping Cart | SareeKart"
         description="Review your curated sarees and handloom drapes. Proceed to secure artisan checkout."
+        noindex={true}
       />
 
       {/* Header Banner */}

@@ -1,4 +1,5 @@
 import api from '../api/axiosConfig';
+import metaPixel from './metaPixel';
 
 /**
  * Enterprise non-blocking customer behavior telemetry client for SareeKart.
@@ -137,7 +138,11 @@ class EventTracker {
         const blob = new Blob([payload], { type: 'application/json' });
         navigator.sendBeacon('/api/events/batch', blob);
       }
-    } catch (ignored) {}
+    } catch (e) {
+      if (typeof console !== 'undefined' && console.debug) {
+        console.debug('Beacon batch dispatch failed:', e?.message);
+      }
+    }
   }
 
   // =========================================================================
@@ -154,6 +159,19 @@ class EventTracker {
       price: product.price,
       dwellTimeMs: Number(dwellTimeMs) || 0,
     });
+    metaPixel.trackViewContent(product);
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'view_item', {
+        currency: 'INR',
+        value: product.price || 0,
+        items: [{
+          item_id: String(product.id || ''),
+          item_name: product.name || '',
+          item_category: product.categoryName || product.category || 'Saree',
+          price: product.price || 0,
+        }],
+      });
+    }
   }
 
   trackSearch(query, resultCountOrFilters = 0, metadata = {}) {
@@ -192,6 +210,20 @@ class EventTracker {
       color: product.color || product.colorName,
       source,
     }, true);
+    metaPixel.trackAddToCart(product);
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'add_to_cart', {
+        currency: 'INR',
+        value: (product.price || 0) * (Number(quantity) || 1),
+        items: [{
+          item_id: String(product.id || ''),
+          item_name: product.name || '',
+          item_category: product.categoryName || product.category || 'Saree',
+          price: product.price || 0,
+          quantity: Number(quantity) || 1,
+        }],
+      });
+    }
   }
 
   trackRemoveFromCart(product, quantity = 1) {
@@ -219,37 +251,65 @@ class EventTracker {
   }
 
   trackCheckoutInitiated(itemCountOrSummary = {}, cartValue = 0, metadata = {}) {
+    let count;
+    let value;
     if (typeof itemCountOrSummary === 'object' && itemCountOrSummary !== null) {
+      count = itemCountOrSummary.itemCount || 0;
+      value = itemCountOrSummary.cartValue || itemCountOrSummary.subtotal || 0;
       this.track('CHECKOUT_INITIATED', 'ORDER', null, {
-        itemCount: itemCountOrSummary.itemCount || 0,
-        cartValue: itemCountOrSummary.cartValue || itemCountOrSummary.subtotal || 0,
+        itemCount: count,
+        cartValue: value,
         paymentMethod: itemCountOrSummary.paymentMethod || 'COD',
         ...itemCountOrSummary,
       }, true);
     } else {
+      count = Number(itemCountOrSummary) || 0;
+      value = Number(cartValue) || 0;
       this.track('CHECKOUT_INITIATED', 'ORDER', null, {
-        itemCount: Number(itemCountOrSummary) || 0,
-        cartValue: Number(cartValue) || 0,
+        itemCount: count,
+        cartValue: value,
         ...this.sanitizeMetadata(metadata),
       }, true);
+    }
+    metaPixel.trackInitiateCheckout({ totalAmount: value, items: Array(count) });
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'begin_checkout', {
+        currency: 'INR',
+        value: value,
+      });
     }
   }
 
   trackOrderCompleted(orderIdOrObj = {}, totalAmount = 0, metadata = {}) {
+    let orderId;
+    let total;
     if (typeof orderIdOrObj === 'object' && orderIdOrObj !== null) {
-      this.track('ORDER_COMPLETED', 'ORDER', orderIdOrObj.id, {
-        orderId: orderIdOrObj.id,
-        totalAmount: orderIdOrObj.totalAmount,
+      orderId = orderIdOrObj.id;
+      total = orderIdOrObj.totalAmount || 0;
+      this.track('ORDER_COMPLETED', 'ORDER', orderId, {
+        orderId: orderId,
+        totalAmount: total,
         itemCount: orderIdOrObj.items?.length || 1,
         paymentMethod: orderIdOrObj.paymentMethod,
         ...orderIdOrObj,
       }, true);
+      metaPixel.trackPurchase(orderIdOrObj);
     } else {
-      this.track('ORDER_COMPLETED', 'ORDER', Number(orderIdOrObj), {
-        orderId: Number(orderIdOrObj),
-        totalAmount: Number(totalAmount) || 0,
+      orderId = Number(orderIdOrObj);
+      total = Number(totalAmount) || 0;
+      this.track('ORDER_COMPLETED', 'ORDER', orderId, {
+        orderId: orderId,
+        totalAmount: total,
         ...this.sanitizeMetadata(metadata),
       }, true);
+      metaPixel.trackPurchase({ id: orderId, totalAmount: total });
+    }
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'purchase', {
+        transaction_id: String(orderId || ''),
+        value: total,
+        currency: 'INR',
+      });
     }
   }
 
@@ -270,6 +330,68 @@ class EventTracker {
     });
   }
 
+  // =========================================================================
+  // Phase 13 Stage 5: Full-Funnel & Auxiliary Channels
+  // =========================================================================
+
+  trackLanding(metadata = {}) {
+    let referrer = '';
+    let path = '/';
+    if (typeof window !== 'undefined') {
+      referrer = document.referrer || '';
+      path = window.location.pathname;
+    }
+    this.track('LANDING_PAGE_VIEW', 'PAGE', null, {
+      path,
+      referrer,
+      ...this.sanitizeMetadata(metadata),
+    });
+    metaPixel.trackPageView();
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'page_view', {
+        page_path: path,
+      });
+    }
+  }
+
+  trackPaymentAttempt(paymentMethod, amount = 0, metadata = {}) {
+    this.track('PAYMENT_ATTEMPT', 'PAYMENT', null, {
+      paymentMethod: String(paymentMethod || 'UNKNOWN'),
+      amount: Number(amount) || 0,
+      ...this.sanitizeMetadata(metadata),
+    }, true);
+  }
+
+  trackRecommendationClick(productId, strategy = 'CURATED', metadata = {}) {
+    if (!productId) return;
+    this.track('RECOMMENDATION_CLICK', 'PRODUCT', Number(productId), {
+      strategy: String(strategy),
+      ...this.sanitizeMetadata(metadata),
+    });
+  }
+
+  trackWhatsAppEngage(action = 'CHAT_OPEN', context = {}) {
+    this.track('WHATSAPP_COMMERCE_ENGAGE', 'CHANNEL', null, {
+      action: String(action),
+      ...this.sanitizeMetadata(context),
+    });
+  }
+
+  trackTrousseauEngage(boardId = null, action = 'VIEW_BOARD', metadata = {}) {
+    this.track('TROUSSEAU_ENGAGE', 'TROUSSEAU_BOARD', boardId ? Number(boardId) : null, {
+      action: String(action),
+      ...this.sanitizeMetadata(metadata),
+    });
+  }
+
+  trackShareLinkEngage(token = '', targetType = 'TROUSSEAU', channel = 'DIRECT') {
+    this.track('SHARE_LINK_ENGAGE', 'SHARE', null, {
+      shareToken: String(token || ''),
+      targetType: String(targetType),
+      channel: String(channel),
+    });
+  }
+
   async identifyUser() {
     try {
       await api.post('/events/identify', { sessionId: this.sessionId });
@@ -287,7 +409,11 @@ class EventTracker {
         localStorage.removeItem(SESSION_STORAGE_KEY);
         this.sessionId = this.getOrCreateSessionId();
       }
-    } catch (e) {}
+    } catch (e) {
+      if (typeof console !== 'undefined' && console.debug) {
+        console.debug('Storage reset failed:', e?.message);
+      }
+    }
   }
 }
 

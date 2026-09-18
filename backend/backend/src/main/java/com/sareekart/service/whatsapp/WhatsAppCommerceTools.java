@@ -241,7 +241,7 @@ public class WhatsAppCommerceTools {
         Optional<Conversation> convOpt = conversationRepository.findById(input.conversationId());
         if (convOpt.isPresent()) {
             Conversation conv = convOpt.get();
-            conv.setStatus(ConversationStatus.OPEN);
+            conv.setStatus(ConversationStatus.HUMAN_ESCALATION);
             conv.setTags("ESCALATED_HUMAN_REQUEST");
             conversationRepository.save(conv);
 

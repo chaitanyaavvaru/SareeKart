@@ -15,7 +15,7 @@ export const visualSearchService = {
       return response.data;
     } catch (error) {
       if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+        throw new Error(error.response.data.message, { cause: error });
       }
       throw error;
     }
@@ -32,7 +32,7 @@ export const visualSearchService = {
       return response.data;
     } catch (error) {
       if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+        throw new Error(error.response.data.message, { cause: error });
       }
       throw error;
     }
@@ -47,7 +47,7 @@ export const visualSearchService = {
       return response.data;
     } catch (error) {
       if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+        throw new Error(error.response.data.message, { cause: error });
       }
       throw error;
     }

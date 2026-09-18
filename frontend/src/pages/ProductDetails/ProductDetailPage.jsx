@@ -28,6 +28,7 @@ import visualSearchService from '../../services/visualSearchService';
 import { addToCart } from '../../redux/slices/cartSlice';
 import ProductGrid from '../../components/ProductGrid';
 import SEO from '../../components/common/SEO';
+import { getCanonicalUrl, truncateDescription, toAbsoluteImageUrl, DEFAULT_OG_IMAGE } from '../../utils/seoUtils';
 import { HOMEPAGE_PRODUCTS } from '../../data/products';
 import MobileProductGallery from '../../components/product/MobileProductGallery';
 import WeaveProvenanceModal from '../../components/product/WeaveProvenanceModal';
@@ -58,11 +59,12 @@ export default function ProductDetailPage() {
   const formatCurrency = formatPrice;
 
   const [product, setProduct] = useState(null);
+  const [notFound, setNotFound] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState(HOMEPAGE_PRODUCTS.slice(0, 4));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [qty, setQty] = useState(1);
-  const [blouseOption, setBlouseOption] = useState('Unstitched blouse fabric');
+  const [blouseOption, _setBlouseOption] = useState('Unstitched blouse fabric');
   const [giftOption, setGiftOption] = useState('Standard recyclable box');
   const [isTailoringOpen, setIsTailoringOpen] = useState(false);
   const [tailoringSpecs, setTailoringSpecs] = useState({
@@ -137,9 +139,21 @@ export default function ProductDetailPage() {
         }
       } catch (loadError) {
         console.error('Failed to load product details', loadError);
-        const fallbackProduct = HOMEPAGE_PRODUCTS.find((item) => item.id === Number(id)) || HOMEPAGE_PRODUCTS[0];
-        setProduct(fallbackProduct);
-        setError('Showing a local product preview while the backend is unavailable.');
+        const status = loadError?.response?.status;
+        if (status === 404 || loadError?.message?.includes('404')) {
+          setProduct(null);
+          setNotFound(true);
+        } else {
+          // If server error or offline, only use local fallback if valid item matches ID
+          const fallbackProduct = HOMEPAGE_PRODUCTS.find((item) => item.id === Number(id));
+          if (fallbackProduct) {
+            setProduct(fallbackProduct);
+            setError('Showing a local product preview while the backend is unavailable.');
+          } else {
+            setProduct(null);
+            setNotFound(true);
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -356,13 +370,119 @@ export default function ProductDetailPage() {
     );
   }
 
-  if (!product) return null;
+  if (notFound || !product) {
+    return (
+      <div className="min-h-[70vh] bg-[#F7F4EE] py-16 px-4 text-[#17211F]">
+        <SEO
+          title="Drape Not Found | SareeKart"
+          description="The luxury handloom drape you are looking for is unavailable or does not exist."
+          noindex={true}
+          nofollow={true}
+        />
+        <div className="max-w-md mx-auto text-center">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#B84F49] mb-2">404 — Drape Not Found</p>
+          <h1 className="text-3xl font-bold font-serif mb-4 text-[#17211F]">Drape Not Found</h1>
+          <p className="text-sm text-[#71817A] mb-8 leading-relaxed">
+            The handloom saree drape requested (#SK-{id}) is not available in our active collection, has been archived, or does not exist.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              to="/products"
+              className="px-5 py-2.5 rounded-[6px] bg-[#3A0F1F] text-[#F7F4EE] text-xs font-bold uppercase tracking-wider hover:bg-[#2A0B16] transition-colors"
+            >
+              Explore Available Drapes
+            </Link>
+            <Link
+              to="/"
+              className="px-5 py-2.5 rounded-[6px] border border-[#DDD8CF] bg-white text-[#17211F] text-xs font-bold uppercase tracking-wider hover:bg-[#F3EFE6] transition-colors"
+            >
+              Return Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const canonicalUrl = getCanonicalUrl(`/products/${product.id}`);
+  const metaDescription = truncateDescription(
+    product.description || `Shop authentic handwoven ${product.name} crafted by master artisans at SareeKart.`
+  );
+  const primaryImage = productImages?.[0] || DEFAULT_OG_IMAGE;
+
+  // Schema.org Product
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "description": metaDescription,
+    "image": productImages.map(toAbsoluteImageUrl),
+    "sku": `SK-${product.id}`,
+    "brand": {
+      "@type": "Brand",
+      "name": "SareeKart"
+    },
+    ...(product.fabric && { "material": product.fabric }),
+    "offers": {
+      "@type": "Offer",
+      "url": canonicalUrl,
+      "priceCurrency": "INR",
+      "price": product.price,
+      "availability": (product.stockQuantity > 0)
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    ...(reviews.length > 0 && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1),
+        "reviewCount": reviews.length
+      }
+    })
+  };
+
+  // Schema.org BreadcrumbList
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": getCanonicalUrl('/')
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Catalog",
+        "item": getCanonicalUrl('/products')
+      },
+      ...(product.categoryName || product.category ? [{
+        "@type": "ListItem",
+        "position": 3,
+        "name": product.categoryName || product.category,
+        "item": getCanonicalUrl('/products', { category: product.categoryName || product.category }, ['category'])
+      }] : []),
+      {
+        "@type": "ListItem",
+        "position": (product.categoryName || product.category) ? 4 : 3,
+        "name": product.name,
+        "item": canonicalUrl
+      }
+    ]
+  };
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] pb-20 text-[#111827]">
       <SEO
-        title={`${product.name} | SareeKart`}
-        description={product.description || `Shop ${product.name} at SareeKart.`}
+        title={`${product.name} | SareeKart Luxury Handlooms`}
+        description={metaDescription}
+        canonical={canonicalUrl}
+        ogType="product"
+        ogImage={primaryImage}
+        schemaData={[productSchema, breadcrumbSchema]}
       />
 
       <div className="section-shell py-6">
@@ -913,6 +1033,7 @@ export default function ProductDetailPage() {
                   </span>
                   <Link
                     to={`/products/${drape.id}`}
+                    onClick={() => eventTracker.trackRecommendationClick(drape.id, 'AI_VISUAL_SIMILAR', { source: 'product_detail' })}
                     className="px-3 py-1.5 rounded-lg bg-[#111827] hover:bg-[#1E6A62] text-white text-[11px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1"
                   >
                     View Drape

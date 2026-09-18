@@ -43,17 +43,49 @@ public class WhatsAppIdentityServiceImpl implements WhatsAppIdentityService {
     }
 
     @Override
+    public String normalizeToE164(String rawPhone) {
+        String tenDigits = normalizePhoneNumber(rawPhone);
+        if (tenDigits.length() == 10) {
+            return "+91" + tenDigits;
+        }
+        if (rawPhone == null) return "";
+        String trimmed = rawPhone.trim();
+        return trimmed.startsWith("+") ? trimmed : ("+" + trimmed.replaceAll("[^0-9]", ""));
+    }
+
+    @Override
+    public String toMetaRecipientPhone(String rawPhone) {
+        String tenDigits = normalizePhoneNumber(rawPhone);
+        if (tenDigits.length() == 10) {
+            return "91" + tenDigits;
+        }
+        if (rawPhone == null) return "";
+        return rawPhone.replaceAll("[^0-9]", "");
+    }
+
+    @Override
+    public boolean isValidIndianMobile(String rawPhone) {
+        String tenDigits = normalizePhoneNumber(rawPhone);
+        return tenDigits.length() == 10 && tenDigits.matches("^[6-9]\\d{9}$");
+    }
+
+    @Override
     @Transactional
     public WhatsAppContact resolveContact(String rawPhone, String profileName) {
         String normalized = normalizePhoneNumber(rawPhone);
+        String e164 = normalizeToE164(rawPhone);
+        String metaPhone = toMetaRecipientPhone(rawPhone);
         String name = (profileName != null && !profileName.isBlank()) ? profileName.trim() : "Patron";
 
         WhatsAppContact contact = contactRepository.findByPhoneNumber(rawPhone)
                 .or(() -> contactRepository.findByPhoneNumber(normalized))
+                .or(() -> contactRepository.findByPhoneNumber(e164))
+                .or(() -> contactRepository.findByPhoneNumber(metaPhone))
                 .orElseGet(() -> {
                     WhatsAppContact newContact = WhatsAppContact.builder()
                             .phoneNumber(normalized.isEmpty() ? rawPhone : normalized)
                             .name(name)
+                            .optedIn(true)
                             .build();
                     return contactRepository.save(newContact);
                 });

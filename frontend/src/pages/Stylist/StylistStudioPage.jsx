@@ -20,6 +20,7 @@ import {
   Bot
 } from 'lucide-react';
 import SEO from '../../components/common/SEO';
+import { getCanonicalUrl } from '../../utils/seoUtils';
 import aiStylistService from '../../services/aiStylistService';
 import AiStylistModal from '../../components/stylist/AiStylistModal';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -95,16 +96,6 @@ export default function StylistStudioPage() {
 
   const chatEndRef = useRef(null);
 
-  useEffect(() => {
-    if (activeTab === 'quiz') {
-      runConsultation();
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, chatLoading]);
-
   const runConsultation = async () => {
     setLoading(true);
     setError('');
@@ -124,6 +115,16 @@ export default function StylistStudioPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (activeTab === 'quiz') {
+      runConsultation();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, chatLoading]);
 
   const handleSendMessage = async (textToSend) => {
     const query = (textToSend || chatInput).trim();
@@ -188,7 +189,11 @@ export default function StylistStudioPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#17211F] py-10">
-      <SEO title="AI Luxury Saree Stylist & Drape Concierge | SareeKart" />
+      <SEO
+        title="AI Luxury Saree Stylist & Drape Concierge | SareeKart"
+        description="Curate bespoke bridal and festive saree ensembles with AI styling grounded in authentic handloom inventory, blouse pairings, and jewelry."
+        canonical={getCanonicalUrl('/stylist')}
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-10">
         
         {/* Studio Hero */}

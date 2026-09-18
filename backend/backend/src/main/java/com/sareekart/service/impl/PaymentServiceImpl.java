@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +44,27 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${razorpay.key.secret}")
     private String keySecret;
 
+    @Value("${razorpay.webhook.secret:}")
+    private String webhookSecret;
+
     private RazorpayClient razorpayClient;
+
+    // Testing isolation setters
+    public void setRazorpayClient(RazorpayClient razorpayClient) {
+        this.razorpayClient = razorpayClient;
+    }
+
+    public void setKeyId(String keyId) {
+        this.keyId = keyId;
+    }
+
+    public void setKeySecret(String keySecret) {
+        this.keySecret = keySecret;
+    }
+
+    public void setWebhookSecret(String webhookSecret) {
+        this.webhookSecret = webhookSecret;
+    }
 
     @PostConstruct
     public void init() {
@@ -115,6 +136,21 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BadRequestException("Unauthorized transaction verification request.");
         }
 
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BadRequestException("Order has already been cancelled.");
+        }
+
+        // Idempotency: If order was already confirmed and completed, return existing confirmed order
+        if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus()) && order.getStatus() == OrderStatus.CONFIRMED) {
+            log.info("Order #{} payment signature verification called for already confirmed order. Returning idempotently.", order.getId());
+            return orderMapper.toResponse(order);
+        }
+
+        // Cross-order mismatch protection: verify that request razorpayOrderId matches order.razorpayOrderId
+        if (order.getRazorpayOrderId() == null || !order.getRazorpayOrderId().equals(request.getRazorpayOrderId())) {
+            throw new BadRequestException("Transaction verification failed: Razorpay order ID mismatch.");
+        }
+
         try {
             JSONObject options = new JSONObject();
             options.put("razorpay_order_id", request.getRazorpayOrderId());
@@ -138,6 +174,108 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
+    @Override
+    public boolean processWebhook(String payload, String signatureHeader) {
+        if (isBlank(webhookSecret)) {
+            log.warn("Razorpay webhook received but RAZORPAY_WEBHOOK_SECRET is not configured.");
+            throw new PaymentConfigurationException("Razorpay webhook secret is not configured.");
+        }
+
+        if (isBlank(signatureHeader)) {
+            throw new BadRequestException("Missing X-Razorpay-Signature header.");
+        }
+
+        try {
+            boolean isValid = Utils.verifyWebhookSignature(payload, signatureHeader, webhookSecret);
+            if (!isValid) {
+                throw new BadRequestException("Invalid webhook signature.");
+            }
+        } catch (RazorpayException e) {
+            log.error("Razorpay webhook signature verification error: {}", e.getMessage());
+            throw new BadRequestException("Invalid webhook signature: " + e.getMessage());
+        }
+
+        JSONObject json = new JSONObject(payload);
+        String event = json.optString("event");
+        JSONObject payloadObj = json.optJSONObject("payload");
+        if (payloadObj == null) {
+            log.warn("Webhook payload missing 'payload' object for event: {}", event);
+            return true;
+        }
+
+        if ("order.paid".equalsIgnoreCase(event) || "payment.captured".equalsIgnoreCase(event)) {
+            String razorpayOrderId = null;
+            String razorpayPaymentId = null;
+
+            JSONObject paymentObj = payloadObj.optJSONObject("payment");
+            if (paymentObj != null) {
+                JSONObject paymentEntity = paymentObj.optJSONObject("entity");
+                if (paymentEntity != null) {
+                    razorpayPaymentId = paymentEntity.optString("id");
+                    razorpayOrderId = paymentEntity.optString("order_id");
+                }
+            }
+
+            if (isBlank(razorpayOrderId)) {
+                JSONObject orderObj = payloadObj.optJSONObject("order");
+                if (orderObj != null) {
+                    JSONObject orderEntity = orderObj.optJSONObject("entity");
+                    if (orderEntity != null) {
+                        razorpayOrderId = orderEntity.optString("id");
+                    }
+                }
+            }
+
+            if (!isBlank(razorpayOrderId)) {
+                Optional<Order> orderOpt = orderRepository.findByRazorpayOrderId(razorpayOrderId);
+                if (orderOpt.isPresent()) {
+                    Order order = orderOpt.get();
+                    if ("COMPLETED".equalsIgnoreCase(order.getPaymentStatus()) && order.getStatus() == OrderStatus.CONFIRMED) {
+                        log.info("Webhook duplicate replay for already confirmed order #{} (Razorpay Order: {})", order.getId(), razorpayOrderId);
+                        return true;
+                    }
+                    if (order.getStatus() == OrderStatus.CANCELLED) {
+                        log.warn("Received payment webhook for already cancelled order #{} (Razorpay Order: {})", order.getId(), razorpayOrderId);
+                        return true;
+                    }
+
+                    order.setPaymentStatus("COMPLETED");
+                    order.setStatus(OrderStatus.CONFIRMED);
+                    if (!isBlank(razorpayPaymentId)) {
+                        order.setRazorpayPaymentId(razorpayPaymentId);
+                    }
+                    orderRepository.save(order);
+                    log.info("Order #{} successfully confirmed via Razorpay webhook '{}'", order.getId(), event);
+                } else {
+                    log.warn("No order found matching Razorpay Order ID: {}", razorpayOrderId);
+                }
+            }
+            return true;
+        } else if ("payment.failed".equalsIgnoreCase(event)) {
+            JSONObject paymentObj = payloadObj.optJSONObject("payment");
+            if (paymentObj != null) {
+                JSONObject paymentEntity = paymentObj.optJSONObject("entity");
+                if (paymentEntity != null) {
+                    String razorpayOrderId = paymentEntity.optString("order_id");
+                    if (!isBlank(razorpayOrderId)) {
+                        Optional<Order> orderOpt = orderRepository.findByRazorpayOrderId(razorpayOrderId);
+                        if (orderOpt.isPresent()) {
+                            Order order = orderOpt.get();
+                            if (order.getStatus() == OrderStatus.PENDING) {
+                                order.setPaymentStatus("FAILED");
+                                orderRepository.save(order);
+                                log.info("Order #{} payment status marked FAILED via webhook", order.getId());
+                            }
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        return true;
+    }
+
     private void ensureConfigured() {
         if (razorpayClient == null || isBlank(keyId) || isBlank(keySecret)) {
             throw new PaymentConfigurationException(
@@ -158,3 +296,4 @@ public class PaymentServiceImpl implements PaymentService {
         return value == null || value.trim().isEmpty();
     }
 }
+

@@ -237,6 +237,7 @@ export default function MyOrders() {
       <SEO
         title="My Orders | SareeKart"
         description="Track SareeKart orders, delivery status, and reorder favorite sarees."
+        noindex={true}
       />
 
       <section className="bg-white">

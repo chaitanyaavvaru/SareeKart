@@ -1,47 +1,65 @@
-# BRIEFING — 2026-09-03T10:30:00Z
+# BRIEFING — 2026-09-17T11:23:01Z
 
 ## Mission
-Investigate frontend codebase layout, React/Vite configuration, build & test suites, bundle chunk sizes (<500 kB requirement), code splitting, proxy configuration, and offline boundary compliance.
+Survey the SareeKart codebase for Requirements R2 & R3: Regulatory Compliance (Opt-In/STOP/START) and Message Templates & Phone Number Normalization.
 
 ## 🔒 My Identity
 - Archetype: explorer
-- Roles: explorer, synthesizer
+- Roles: investigator, synthesis
 - Working directory: /Users/chaitanyachaitu/Downloads/SareeKart-main/.agents/teamwork_preview_explorer_survey_2
-- Original parent: e4adc674-e9a3-41a5-bba8-2bbc271432c2
-- Milestone: survey
+- Original parent: 3bf2798a-4ab9-4e27-be53-249dcd6c7927
+- Milestone: Phase 13 Stage 4 Survey (Requirements R2 & R3)
 
 ## 🔒 Key Constraints
 - Read-only investigation — do NOT implement
-- Scope limited to frontend architecture, build, bundle size, tests, proxy, health check, offline compliance
-- All findings written to survey_frontend.md and handoff.md in working directory
-- Zero outbound network calls / strict localhost isolation
+- Maintain >= 30% free disk space
+- Only write files inside working directory (.agents/teamwork_preview_explorer_survey_2/)
+- Communicate to parent orchestrator via send_message
 
 ## Current Parent
-- Conversation ID: e4adc674-e9a3-41a5-bba8-2bbc271432c2
-- Updated: 2026-09-03T10:25:00Z
+- Conversation ID: 3bf2798a-4ab9-4e27-be53-249dcd6c7927
+- Updated: 2026-09-17T11:29:00Z
 
 ## Investigation State
 - **Explored paths**:
-  - `frontend/package.json`, `frontend/vite.config.js`, `frontend/eslint.config.js`, `frontend/playwright.config.js`
-  - `frontend/src/` (main.jsx, AppRouter.jsx, App.jsx, MainLayout.jsx, pages, redux)
-  - `frontend/tests/` (cart, products, login, home, admin, register, search)
-  - `frontend/e2e/` (example.spec.js)
-  - Build output (`dist/assets/`), lint results, playwright test executions, network ports 5173 & 8081
+  - `backend/backend/src/main/java/com/sareekart/entity/WhatsAppContact.java`
+  - `backend/backend/src/main/java/com/sareekart/entity/User.java`
+  - `backend/backend/src/main/java/com/sareekart/entity/WhatsAppNotificationLog.java`
+  - `backend/backend/src/main/java/com/sareekart/repository/WhatsAppContactRepository.java`
+  - `backend/backend/src/main/java/com/sareekart/repository/WhatsAppNotificationLogRepository.java`
+  - `backend/backend/src/main/java/com/sareekart/service/WhatsAppIdentityService.java` & `impl/WhatsAppIdentityServiceImpl.java`
+  - `backend/backend/src/main/java/com/sareekart/service/WhatsAppWebhookService.java`
+  - `backend/backend/src/main/java/com/sareekart/service/WhatsAppNotificationService.java` & `impl/WhatsAppNotificationServiceImpl.java`
+  - `backend/backend/src/main/java/com/sareekart/service/OrderNotificationService.java`
+  - `backend/backend/src/main/java/com/sareekart/service/impl/WhatsAppAiCommerceServiceImpl.java`
+  - `backend/backend/src/main/java/com/sareekart/service/WhatsAppApiClient.java`
+  - `backend/backend/src/main/java/com/sareekart/dto/whatsapp/WhatsAppMessageRequest.java`
+  - `backend/backend/src/main/java/com/sareekart/controller/WhatsAppWebhookController.java`
+  - `backend/backend/src/main/java/com/sareekart/controller/AdminWhatsAppController.java`
+  - `backend/backend/src/main/java/com/sareekart/controller/WhatsAppNotificationController.java`
+  - `backend/backend/src/main/resources/db/migration/V21__create_whatsapp_dispatch_tables.sql`
+  - `backend/backend/src/test/java/com/sareekart/service/WhatsApp*Test` (40 tests passing)
 - **Key findings**:
-  - Build: `npm run build` succeeds with 0 errors; largest chunk is `index-DIcL-ISg.js` at 438.72 kB, strictly satisfying the < 500 kB requirement.
-  - Lint: `npm run lint` fails with 221 errors and 1 warning (mostly `no-unused-vars` and 1 `react-hooks/set-state-in-effect` in `ManageSarees.jsx`).
-  - Health check: `http://localhost:5173` returns HTTP 200 OK; backend `GET http://localhost:8081/api/products` and proxy `http://localhost:5173/api/products` return HTTP 200 OK.
-  - Port binding quirk: Vite binds only to IPv6 `localhost` (`::1`), refusing `127.0.0.1:5173` used by `register.spec.js`. Needs `server.host: '0.0.0.0'`.
-  - Playwright tests: 4 passed, 10 failed due to UI copy updates (Home, Login, Search, Admin button label) and 127.0.0.1 IPv6 binding.
-  - Offline boundaries: External Google Fonts `@import` in `index.css`, external Unsplash/Kankatala image URLs, and `https://playwright.dev` in `e2e/example.spec.js`.
-- **Unexplored areas**: None within frontend survey scope.
+  - `WhatsAppContact` lacks `optedIn` field and consent timestamps; opt-in is only stored on `User.whatsappOptIn`.
+  - `CANCEL` and `UNSTOP` keywords are missing entirely.
+  - Keyword processing is buried in async AI bot; bypassed if conversation is escalated (`HUMAN_ESCALATION` or `OPEN`).
+  - Unlinked/guest customers cannot opt out; default-true logic in `processAndPersist` allows dispatches to opted-out guests.
+  - Phone normalizer only outputs 10-digit format (`9876543210`); lacks E.164 (`+919876543210`) and Meta format (`919876543210`).
+  - `WhatsAppApiClient` has no `sendTemplateMessage` method; `WhatsAppMessageRequest.Template` lacks component/parameter definitions.
+  - Plain text messages are sent instead of Meta HSM templates, violating Meta's 24-hour customer care window rules.
+  - Database primary keys (`order.id`, `returnRequest.id`) are leaked in message strings and URLs.
+  - Acceptance test `WhatsAppProductionReadinessTest.java` is missing.
+- **Unexplored areas**: None for Requirements R2 and R3.
 
 ## Key Decisions Made
-- Confirmed bundle chunk requirement is met (438.72 kB < 500 kB).
-- Documented manualChunks optimization for further safety headroom.
-- Identified root causes for test and lint failures.
+- Completed full audit of R2 and R3 backend code, entities, migrations, and test suites.
+- Verified test suite baseline (40 passing tests, 0 failures).
+- Verified disk headroom (46.0% free space).
+- Documented exhaustive architectural report in `survey_report.md`.
 
 ## Artifact Index
-- /Users/chaitanyachaitu/Downloads/SareeKart-main/.agents/teamwork_preview_explorer_survey_2/survey_frontend.md — Comprehensive frontend architecture & bundle survey report
-- /Users/chaitanyachaitu/Downloads/SareeKart-main/.agents/teamwork_preview_explorer_survey_2/handoff.md — 5-component handoff report
-- /Users/chaitanyachaitu/Downloads/SareeKart-main/.agents/teamwork_preview_explorer_survey_2/progress.md — Liveness progress log
+- DISPATCH.md — Dispatch log
+- BRIEFING.md — Persistent working memory
+- progress.md — Liveness heartbeat and step tracking
+- survey_report.md — Detailed survey report for R2 & R3
+- handoff.md — 5-Component handoff report

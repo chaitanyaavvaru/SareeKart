@@ -1,11 +1,15 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
+import { CANONICAL_DOMAIN, DEFAULT_OG_IMAGE, toAbsoluteImageUrl } from '../../utils/seoUtils';
 
-export default function SEO({ 
-  title = "SareeKart | India's Premium Luxury Saree Platform", 
-  description = "Explore handwoven Banarasi, Kanchipuram, Uppada, and Pochampally silk sarees directly from India's master artisans.",
+export default function SEO({
+  title = "SareeKart | India's Premium Luxury Handloom Saree Platform",
+  description = "Explore certified handwoven Banarasi, Kanchipuram, Uppada, and Pochampally silk sarees directly from India's master artisans.",
+  canonical = null,
+  noindex = false,
+  nofollow = false,
   ogType = "website",
-  ogImage = "https://kankatala.com/cdn/shop/files/1214939982_2.jpg?v=1740403250",
-  schemaData = null
+  ogImage = DEFAULT_OG_IMAGE,
+  schemaData = null,
 }) {
   useEffect(() => {
     // 1. Title
@@ -20,13 +24,38 @@ export default function SEO({
     }
     metaDesc.content = description;
 
-    // 3. Open Graph Tags
+    // 3. Robots meta tag
+    let metaRobots = document.querySelector('meta[name="robots"]');
+    if (!metaRobots) {
+      metaRobots = document.createElement('meta');
+      metaRobots.name = 'robots';
+      document.head.appendChild(metaRobots);
+    }
+    if (noindex) {
+      metaRobots.content = nofollow ? 'noindex, nofollow' : 'noindex, follow';
+    } else {
+      metaRobots.content = 'index, follow';
+    }
+
+    // 4. Canonical link tag
+    const resolvedCanonical = canonical || `${CANONICAL_DOMAIN}${window.location.pathname}`;
+    let linkCanonical = document.querySelector('link[rel="canonical"]');
+    if (!linkCanonical) {
+      linkCanonical = document.createElement('link');
+      linkCanonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(linkCanonical);
+    }
+    linkCanonical.setAttribute('href', resolvedCanonical);
+
+    // 5. Open Graph Tags
+    const absoluteOgImage = toAbsoluteImageUrl(ogImage);
     const ogTags = {
       'og:title': title,
       'og:description': description,
       'og:type': ogType,
-      'og:image': ogImage,
-      'og:url': window.location.href,
+      'og:image': absoluteOgImage,
+      'og:url': resolvedCanonical,
+      'og:site_name': 'SareeKart',
     };
 
     Object.entries(ogTags).forEach(([property, content]) => {
@@ -39,12 +68,12 @@ export default function SEO({
       tag.content = content;
     });
 
-    // 4. Twitter Card Tags
+    // 6. Twitter Card Tags
     const twitterTags = {
       'twitter:card': 'summary_large_image',
       'twitter:title': title,
       'twitter:description': description,
-      'twitter:image': ogImage,
+      'twitter:image': absoluteOgImage,
     };
 
     Object.entries(twitterTags).forEach(([name, content]) => {
@@ -57,7 +86,7 @@ export default function SEO({
       tag.content = content;
     });
 
-    // 5. JSON-LD Schema
+    // 7. JSON-LD Schema
     let schemaScript = document.getElementById('jsonld-schema');
     if (!schemaScript) {
       schemaScript = document.createElement('script');
@@ -70,21 +99,23 @@ export default function SEO({
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "SareeKart",
-      "url": window.location.origin,
+      "url": CANONICAL_DOMAIN,
       "potentialAction": {
         "@type": "SearchAction",
-        "target": `${window.location.origin}/products?search={search_term_string}`,
+        "target": `${CANONICAL_DOMAIN}/products?search={search_term_string}`,
         "query-input": "required name=search_term_string"
       }
     };
 
-    schemaScript.textContent = JSON.stringify(schemaData || defaultSchema);
-
-    // Clean up function
-    return () => {
-      // Keep descriptions, just restore default values if needed
-    };
-  }, [title, description, ogType, ogImage, schemaData]);
+    if (Array.isArray(schemaData)) {
+      schemaScript.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@graph": schemaData
+      });
+    } else {
+      schemaScript.textContent = JSON.stringify(schemaData || defaultSchema);
+    }
+  }, [title, description, canonical, noindex, ogType, ogImage, schemaData]);
 
   return null; // SEO component does not render any visual UI elements
 }

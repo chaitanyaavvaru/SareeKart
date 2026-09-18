@@ -16,6 +16,9 @@ public class BehavioralOverviewResponse {
     private long activeSessions;
     private Map<String, Long> eventCountsByType;
     private List<BehavioralFunnelStageDto> funnel;
+    private List<BehavioralFunnelStageDto> ecommerceFunnel;
+    private Map<String, Long> channelEngagement;
+    private Map<String, Double> funnelMetrics;
     private List<TopTrendingProductDto> topProducts;
     private List<SearchQueryTelemetryDto> topSearches;
     private List<SearchQueryTelemetryDto> zeroResultSearches;

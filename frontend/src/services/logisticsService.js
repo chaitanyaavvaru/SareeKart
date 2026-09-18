@@ -20,7 +20,7 @@ export const logisticsService = {
     } catch (error) {
       // Graceful fallback for development / offline simulation
       if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+        throw new Error(error.response.data.message, { cause: error });
       }
       return {
         success: true,

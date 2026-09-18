@@ -1,7 +1,7 @@
-# BRIEFING — 2026-09-04T15:46:00Z
+# BRIEFING — 2026-09-17T11:30:28Z
 
 ## Mission
-Implement Milestone M1 Backend Analytics Telemetry Engine & Access Control in backend/backend/ covering R1, R2, R3, and R5.
+Implement and harden SareeKart WhatsApp Backend across Requirements R1 through R5 (Webhook Security & Idempotency, Regulatory Opt-In/STOP/START, Message Templates & Phone Normalization, Failure Isolation & Rate Limiting & Admin Escalation, Trousseau Isolation).
 
 ## 🔒 My Identity
 - Archetype: teamwork_preview_worker_m1
@@ -9,6 +9,8 @@ Implement Milestone M1 Backend Analytics Telemetry Engine & Access Control in ba
 - Working directory: /Users/chaitanyachaitu/Downloads/SareeKart-main/.agents/teamwork_preview_worker_m1
 - Original parent: 5c5f0638-f07d-4858-a204-ce85192f199a
 - Milestone: M1 (Backend Analytics Telemetry Engine & Access Control)
+- Current Role/Task: Worker M1 - WhatsApp Backend Hardening & Implementation Specialist (Phase 13 Stage 4)
+- New Parent ID: 3bf2798a-4ab9-4e27-be53-249dcd6c7927
 
 ## 🔒 Key Constraints
 - Genuine implementation only. No hardcoding or dummy implementations. Forensic auditor will verify.
@@ -16,16 +18,22 @@ Implement Milestone M1 Backend Analytics Telemetry Engine & Access Control in ba
 - Enforce HTTP 403 Forbidden with exact message "Not authorised to perform this action" for unauthorized or customer access to /api/admin/**.
 - Ensure all Maven tests pass with 0 failures and 0 errors (`./mvnw clean test`).
 - Restart backend via `./manage.sh restart` and verify health check `http://localhost:8081/api/products`.
+- Webhook signature validator: HMAC-SHA256 required, missing or invalid signature returns 401 Unauthorized or false.
+- Regulatory Compliance: STOP/UNSUBSCRIBE/CANCEL -> optedIn=false; START/UNSTOP -> optedIn=true. V32 migration.
+- Indian phone number normalization (+91, 91, 0, 10-digit).
+- Sensitive data masking: never leak JWT, credit cards, passwords, internal IDs.
+- Outbound failure isolation: WhatsApp API failures must not fail order checkout.
 
 ## Current Parent
-- Conversation ID: 5c5f0638-f07d-4858-a204-ce85192f199a
-- Updated: 2026-09-04T15:46:00Z
+- Conversation ID: 3bf2798a-4ab9-4e27-be53-249dcd6c7927
+- Updated: 2026-09-17T11:30:28Z
 
 ## Task Summary
-- **What to build**: Full backend analytics suite with repositories, DTOs, service logic, controller, security hardening, seeding, and unit tests.
-- **Success criteria**: `./mvnw clean test` passes 100%, live service returns 200 OK for products, admin analytics 403 for unauthorized.
-- **Interface contracts**: PROJECT.md § Interface Contracts
-- **Code layout**: PROJECT.md § Code Layout
+- **What to build**: Full backend WhatsApp hardening (R1-R5) including Webhook Security & Idempotency, Opt-In / STOP-START protocol, HSM templates & Phone normalization, Failure isolation & Rate limiting & Escalation, and Trousseau isolation.
+- **Success criteria**: All tests compile and pass (`./mvnw test -Dtest=WhatsApp*Test,Trousseau*Test,Return*Test`), genuine business logic, no regressions.
+- **Interface contracts**: PROJECT.md & Survey reports 1, 2, 3.
+- **Code layout**: `backend/backend/src/main/java/com/sareekart/...`
+
 
 ## Key Decisions Made
 - Used combined JPQL aggregations and in-memory streams to support both fast database calculations and isolated unit testing.

@@ -1,5 +1,6 @@
 package com.sareekart.repository;
 
+import com.sareekart.dto.projection.ProductSitemapProjection;
 import com.sareekart.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,9 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
+
+    @Query("SELECT p.id AS id, p.updatedAt AS updatedAt, p.createdAt AS createdAt FROM Product p WHERE p.active = true ORDER BY p.id ASC")
+    List<ProductSitemapProjection> findSitemapProjectionsByActiveTrue();
 
     Page<Product> findByActiveTrue(Pageable pageable);
 

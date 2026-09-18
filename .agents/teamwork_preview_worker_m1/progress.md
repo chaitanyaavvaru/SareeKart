@@ -1,10 +1,21 @@
-# Progress — Milestone M1 Implementation
+# Progress — WhatsApp Backend Hardening (Phase 13 Stage 4)
 
-Last visited: 2026-09-04T15:45:00Z
+Last visited: 2026-09-17T11:30:28Z
 
-## Status: COMPLETED
+## Status: IN_PROGRESS
 
-### Completed Steps
+### Plan & Checklist
+- [x] Initialized DISPATCH.md and updated BRIEFING.md
+- [ ] Read Survey Reports (survey 1, 2, 3) and PROJECT.md
+- [ ] Inspect existing codebase for WhatsApp webhook, security, templates, services, entities
+- [ ] R1: Webhook Security & Idempotency
+- [ ] R2: Regulatory Compliance (Opt-In, STOP, START Protocol) & V32 Migration
+- [ ] R3: Message Templates & Phone Number Normalization & Sensitive Data Masking
+- [ ] R4: Failure Domain Isolation, Rate Limiting & Admin Escalation
+- [ ] R5: Isolation of Bridal Trousseau WhatsApp Integration
+- [ ] Build & Test: `./mvnw test -Dtest=WhatsApp*Test,Trousseau*Test,Return*Test` and all unit tests
+- [ ] Prepare handoff.md and send message to caller
+
 - [x] Read ORIGINAL_REQUEST.md, PROJECT.md, DISPATCH.md
 - [x] Read Explorer handoffs (explorer_m1_1, explorer_m1_2, spec_miner_m1_3)
 - [x] Initialized DISPATCH.md, BRIEFING.md, and progress.md

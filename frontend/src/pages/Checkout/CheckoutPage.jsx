@@ -24,6 +24,7 @@ import SEO from '../../components/common/SEO';
 import walletService from '../../services/walletService';
 import whatsAppService from '../../services/whatsAppService';
 import cartService from '../../services/cartService';
+import logisticsService from '../../services/logisticsService';
 import eventTracker from '../../utils/eventTracker';
 
 const formatCurrency = (val) =>
@@ -69,9 +70,12 @@ export default function CheckoutPage() {
   const [placedOrder, setPlacedOrder] = useState(null);
   const [pendingPaymentOrder, setPendingPaymentOrder] = useState(null);
   const idempotencyKeyRef = useRef(null);
-  if (!idempotencyKeyRef.current) {
-    idempotencyKeyRef.current = 'chk_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
-  }
+
+  useEffect(() => {
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = 'chk_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+    }
+  }, []);
 
   const [fullName, setFullName] = useState(user ? `${user.firstName} ${user.lastName || ''}`.trim() : '');
   const [phone, setPhone] = useState('');
@@ -81,7 +85,6 @@ export default function CheckoutPage() {
   const [pincode, setPincode] = useState('');
   const [logisticsInfo, setLogisticsInfo] = useState(null);
   const [checkingLogistics, setCheckingLogistics] = useState(false);
-  const [logisticsError, setLogisticsError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [whatsappOptIn, setWhatsappOptIn] = useState(true);
@@ -98,15 +101,12 @@ export default function CheckoutPage() {
     const cleanPin = pincode.replace(/\D/g, '').slice(0, 6);
     if (cleanPin.length === 6) {
       setCheckingLogistics(true);
-      setLogisticsError('');
       logisticsService.checkPincode(cleanPin)
         .then((res) => {
           if (res && res.data) {
             const data = res.data;
             setLogisticsInfo(data);
-            if (!data.serviceable) {
-              setLogisticsError(`PIN code ${cleanPin} is outside our courier delivery network.`);
-            } else {
+            if (data.serviceable) {
               setCity(data.city);
               setStateName(data.state);
               if (!data.codAvailable && paymentMethod === 'COD') {
@@ -115,17 +115,16 @@ export default function CheckoutPage() {
             }
           }
         })
-        .catch((err) => {
-          setLogisticsError(err.message || 'Unable to check courier serviceability.');
+        .catch(() => {
+          setLogisticsInfo({ serviceable: false });
         })
         .finally(() => {
           setCheckingLogistics(false);
         });
     } else {
       setLogisticsInfo(null);
-      setLogisticsError('');
     }
-  }, [pincode]);
+  }, [paymentMethod, pincode]);
 
   useEffect(() => {
     if (user) {
@@ -260,6 +259,12 @@ export default function CheckoutPage() {
       setSubmitError(null);
       setStep('submitting');
 
+      eventTracker.trackPaymentAttempt(isFullyCoveredByWallet ? 'WALLET' : paymentMethod, grandTotal, {
+        itemCount: items.length,
+        hasCoupon: Boolean(appliedCoupon),
+        walletDeduction,
+      });
+
       const orderPayload = {
         shippingAddress: {
           fullName,
@@ -378,7 +383,7 @@ export default function CheckoutPage() {
   if (step === 'syncing') {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-5 bg-[#F5F7FA] px-4 text-center">
-        <SEO title="Checkout | SareeKart" description="Secure SareeKart checkout." />
+        <SEO title="Checkout | SareeKart" description="Secure SareeKart checkout." noindex={true} />
         {syncError ? (
           <div className="max-w-md rounded-[8px] border border-red-200 bg-red-50 p-5 text-sm font-bold text-red-900">
             <p>{syncError}</p>
@@ -408,7 +413,7 @@ export default function CheckoutPage() {
   if (step === 'success' && placedOrder) {
     return (
       <div className="min-h-screen bg-[#F5F7FA] py-12 text-[#111827]">
-        <SEO title="Order Placed | SareeKart" description="SareeKart order confirmation." />
+        <SEO title="Order Placed | SareeKart" description="SareeKart order confirmation." noindex={true} />
         <section className="section-shell">
           <div className="mx-auto max-w-2xl rounded-[8px] border border-[#DDE4EA] bg-white p-6 text-center shadow-soft sm:p-10">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#E7F5F3] text-[#0F766E]">
@@ -466,7 +471,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] py-8 text-[#111827]">
-      <SEO title="Checkout | SareeKart" description="Secure SareeKart checkout and delivery." />
+      <SEO title="Checkout | SareeKart" description="Secure SareeKart checkout and delivery." noindex={true} />
 
       <section className="section-shell">
         <div className="mb-8">

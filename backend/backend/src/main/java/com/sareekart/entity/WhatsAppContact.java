@@ -31,6 +31,24 @@ public class WhatsAppContact {
     @JoinColumn(name = "user_id")
     private User user; // Link to E-commerce user if verified
 
+    /**
+     * Whether this contact has opted in to receive WhatsApp messages from SareeKart.
+     * Set to {@code false} when the contact sends a STOP/UNSUBSCRIBE/CANCEL/QUIT keyword.
+     * Set back to {@code true} when the contact sends a START/SUBSCRIBE/JOIN/YES keyword.
+     * Defaults to {@code true} for new contacts (explicit opt-in via chat initiation).
+     * All existing contacts are migrated to {@code true} via V32 migration (safe default).
+     */
+    @Column(name = "opted_in", nullable = false)
+    @Builder.Default
+    private Boolean optedIn = true;
+
+    @Column(name = "opt_in_updated_at")
+    private LocalDateTime optInUpdatedAt;
+
+    public boolean isOptedIn() {
+        return Boolean.TRUE.equals(this.optedIn);
+    }
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

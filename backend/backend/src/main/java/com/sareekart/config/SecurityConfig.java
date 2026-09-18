@@ -3,6 +3,7 @@ package com.sareekart.config;
 import com.sareekart.security.CustomUserDetailsService;
 import com.sareekart.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,6 +21,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -29,6 +36,9 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}")
+    private String allowedOrigins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173";
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -49,10 +59,37 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Link", "X-Total-Count"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(headers -> headers
+                .frameOptions(frame -> frame.deny())
+                .contentTypeOptions(contentType -> {})
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000))
+            )
             .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint((request, response, authException) -> {
                 if (request.getRequestURI() != null && request.getRequestURI().startsWith("/api/admin")) {
                     response.setStatus(HttpStatus.FORBIDDEN.value());
@@ -71,14 +108,18 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
-                .requestMatchers("/api/webhook/whatsapp/**", "/ws-sareekart/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/api/webhook/**", "/api/payments/webhook", "/ws-sareekart/**").permitAll()
+                .requestMatchers("/api/trousseau/share/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**", "/api/fabrics/**", "/api/occasions/**", "/api/colors/**", "/api/orders/track/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/seo/**", "/sitemap.xml", "/robots.txt").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/logistics/**").permitAll()
                 .requestMatchers("/api/events/**").permitAll()
                 .requestMatchers("/api/recommendations/**").permitAll()
                 .requestMatchers("/api/ai/stylist/**").permitAll()
                 .requestMatchers("/api/ai/visual-search/**").permitAll()
+                .requestMatchers("/actuator/**").hasAnyRole("OWNER", "ADMIN")
                 .requestMatchers("/api/approvals/*/approve", "/api/approvals/*/reject").hasRole("OWNER")
                 .requestMatchers("/api/admin/inventory/transfer/*/approve", "/api/admin/inventory/transfer/*/reject").hasRole("OWNER")
                 .requestMatchers("/api/approvals/**").hasAnyRole("OWNER", "MANAGER", "ADMIN")

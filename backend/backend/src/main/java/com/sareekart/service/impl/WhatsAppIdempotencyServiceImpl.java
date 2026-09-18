@@ -35,8 +35,11 @@ public class WhatsAppIdempotencyServiceImpl implements WhatsAppIdempotencyServic
         // 1. Check in-memory concurrent locks
         Long existingTime = activeLockMap.putIfAbsent(wamId, now);
         if (existingTime != null) {
-            log.warn("Idempotency guard: wamId '{}' is already in-flight or processed within last 15 minutes", wamId);
-            return false;
+            if (now - existingTime < LOCK_TTL_MS) {
+                log.warn("Idempotency guard: wamId '{}' is already in-flight or processed within last 15 minutes", wamId);
+                return false;
+            }
+            activeLockMap.put(wamId, now);
         }
 
         // 2. Check persistence layer

@@ -12,6 +12,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import SEO from '../../components/common/SEO';
+import { getCanonicalUrl } from '../../utils/seoUtils';
 
 const WEAVES_DATA = [
   {
@@ -158,6 +159,7 @@ export default function HeritageWeavesPage() {
       <SEO
         title="Heritage Weaves of India & Motif Symbolism | SareeKart"
         description="Explore 8 GI-certified Indian handloom clusters: Kanchipuram, Banarasi, Patola, Paithani, Uppada, Gadwal, Pochampally, and Ponduru Khadi with authentic motif symbolism."
+        canonical={getCanonicalUrl('/heritage-weaves')}
       />
 
       {/* Hero */}

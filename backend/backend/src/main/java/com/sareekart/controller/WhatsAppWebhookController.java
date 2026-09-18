@@ -45,13 +45,15 @@ public class WhatsAppWebhookController {
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody(required = false) byte[] payloadBytes) {
 
-        if (payloadBytes == null || payloadBytes.length == 0) {
-            return ResponseEntity.ok().build();
+        byte[] rawBytes = (payloadBytes != null) ? payloadBytes : new byte[0];
+
+        if (!signatureValidator.isValid(rawBytes, signature)) {
+            log.warn("Unauthorized WhatsApp Webhook: Invalid or missing HMAC signature");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        if (!signatureValidator.isValid(payloadBytes, signature)) {
-            log.warn("Unauthorized WhatsApp Webhook: Invalid HMAC signature");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (rawBytes.length == 0) {
+            return ResponseEntity.ok().build();
         }
 
         try {

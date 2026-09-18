@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Heart, ShoppingBag, Trash2, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 import wishlistService from '../../services/wishlistService';
@@ -16,7 +16,6 @@ const formatCurrency = (val) =>
 
 export default function WishlistPage() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +112,7 @@ export default function WishlistPage() {
       <SEO
         title="My Wishlist | SareeKart"
         description="Your curated handloom wishlist. Review saved Kanchipuram, Banarasi, and pure silk sarees."
+        noindex={true}
       />
 
       <section className="bg-white border-b border-[#DDD8CF] py-12 px-6 lg:px-16">

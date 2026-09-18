@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import SEO from '../../components/common/SEO';
+import { getCanonicalUrl } from '../../utils/seoUtils';
 import InStoreAppointmentModal, { BOUTIQUE_LOCATIONS } from '../../components/stores/InStoreAppointmentModal';
 
 const BOUTIQUE_DETAILS = [
@@ -86,6 +87,7 @@ export default function StoresPage() {
       <SEO
         title="Our Flagship Boutiques | SareeKart"
         description="Experience heirloom handloom sarees in person. Visit SareeKart flagship boutiques across Hyderabad, Bengaluru, New Delhi, Visakhapatnam, and Vijayawada."
+        canonical={getCanonicalUrl('/stores')}
       />
 
       {/* Hero Section */}

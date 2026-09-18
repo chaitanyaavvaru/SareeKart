@@ -13,12 +13,6 @@ export default function WhatsAppTimelineDrawer({
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && order?.id) {
-      loadTimeline();
-    }
-  }, [isOpen, order?.id]);
-
   const loadTimeline = async () => {
     setLoading(true);
     try {
@@ -30,6 +24,12 @@ export default function WhatsAppTimelineDrawer({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && order?.id) {
+      loadTimeline();
+    }
+  }, [isOpen, order?.id]);
 
   if (!isOpen) return null;
 

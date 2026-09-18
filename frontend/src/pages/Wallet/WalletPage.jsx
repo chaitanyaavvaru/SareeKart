@@ -103,6 +103,7 @@ export default function WalletPage() {
       <SEO 
         title="Silk Patron Wallet & Loyalty Rewards | SareeKart" 
         description="View your SareeKart store credit balance, earned loyalty points, and Silk Patron Club tier benefits." 
+        noindex={true}
       />
 
       <div className="section-shell max-w-6xl">

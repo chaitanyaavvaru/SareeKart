@@ -1,0 +1,38 @@
+# ====================================================================
+# SareeKart Enterprise Production Robots Directives
+# ====================================================================
+User-agent: *
+Allow: /
+Allow: /products
+Allow: /products/*
+Allow: /heritage-weaves
+Allow: /stores
+Allow: /artisans
+Allow: /saree-care
+Allow: /stylist
+Allow: /trousseau-planner
+Allow: /assets/
+Allow: /uploads/
+
+# Disallow private customer areas, authentication, checkout, and admin
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /profile
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /orders/
+Disallow: /track-order
+Disallow: /wishlist
+Disallow: /wallet
+Disallow: /admin
+Disallow: /admin/
+Disallow: /trousseau
+Disallow: /trousseau/
+Disallow: /api/
+
+# Canonical Sitemap
+Sitemap: https://sareekart.com/sitemap.xml

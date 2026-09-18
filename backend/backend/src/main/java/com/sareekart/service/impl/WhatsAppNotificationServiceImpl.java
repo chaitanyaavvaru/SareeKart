@@ -24,6 +24,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import com.sareekart.entity.WhatsAppContact;
+import com.sareekart.repository.WhatsAppContactRepository;
+import com.sareekart.service.WhatsAppIdentityService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +46,12 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final ReturnRequestRepository returnRequestRepository;
+
+    @Autowired(required = false)
+    private WhatsAppContactRepository contactRepository;
+
+    @Autowired(required = false)
+    private WhatsAppIdentityService identityService;
 
     @Value("${whatsapp.api.token:}")
     private String apiToken;
@@ -65,6 +75,9 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
             return null;
         }
 
+        String orderRef = getOrderReference(order);
+        String trackingUrl = "https://sareekart.com/orders/track?orderNumber=" + orderRef;
+
         String itemSummary = order.getItems() != null && !order.getItems().isEmpty()
                 ? order.getItems().stream()
                 .map(item -> String.format("• %s (x%d)", item.getProduct() != null ? item.getProduct().getName() : "Handloom Saree", item.getQuantity()))
@@ -75,20 +88,20 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
 
         String message = String.format(
                 "🙏 *Namaste %s!*\n\n" +
-                        "Thank you for patronizing *SareeKart Handlooms*. Your bespoke order *#%d* has been confirmed!\n\n" +
+                        "Thank you for patronizing *SareeKart Handlooms*. Your bespoke order *#%s* has been confirmed!\n\n" +
                         "✨ *Artisan Drape Summary:*\n%s\n\n" +
                         "💰 *Total Amount:* ₹%,.2f\n" +
                         "📅 *Estimated Delivery:* %s\n\n" +
                         "Our master weavers and curators are preparing your weave with the official *Silk Mark India* seal.\n\n" +
-                        "🔗 *Track Order:* https://sareekart.com/orders/%d",
-                user.getFirstName(), order.getId(), itemSummary,
+                        "🔗 *Track Order:* %s",
+                user.getFirstName(), orderRef, itemSummary,
                 order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO,
-                estDate, order.getId()
+                estDate, trackingUrl
         );
 
         return processAndPersist(order.getId(), null, user, user.getFirstName() + " " + (user.getLastName() != null ? user.getLastName() : ""),
-                mobile, WhatsAppEventType.ORDER_CONFIRMED, "tpl_order_confirmed_v1", message, null, null,
-                "https://sareekart.com/orders/" + order.getId());
+                mobile, WhatsAppEventType.ORDER_CONFIRMED, "tpl_order_confirmed_v1", message, orderRef, null,
+                trackingUrl);
     }
 
     @Override
@@ -103,6 +116,7 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
             return null;
         }
 
+        String orderRef = getOrderReference(order);
         String courier = order.getCourierPartner() != null ? order.getCourierPartner() : "Blue Dart Apex Air";
         String awb = order.getTrackingNumber() != null ? order.getTrackingNumber() : "BD-" + (100000 + (order.getId() * 73));
         String trackingUrl = buildTrackingUrl(courier, awb);
@@ -110,14 +124,14 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
 
         String message = String.format(
                 "📦 *Heirloom Saree Dispatched!*\n\n" +
-                        "*Namaste %s*, your handloom order *#%d* is en route!\n\n" +
+                        "*Namaste %s*, your handloom order *#%s* is en route!\n\n" +
                         "🚚 *Courier Partner:* %s\n" +
                         "🔖 *AWB Tracking Number:* %s\n" +
                         "📍 *Fulfillment Hub:* Bengaluru Central Vault (WH-01)\n" +
                         "🎯 *Estimated Arrival:* %s\n\n" +
                         "Track your consignment in real time:\n%s\n\n" +
                         "Your weave is protected inside our signature breathable muslin dust bag.",
-                user.getFirstName(), order.getId(), courier, awb, estDate, trackingUrl
+                user.getFirstName(), orderRef, courier, awb, estDate, trackingUrl
         );
 
         return processAndPersist(order.getId(), null, user, user.getFirstName(), mobile,
@@ -136,6 +150,7 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
             return null;
         }
 
+        String orderRef = getOrderReference(order);
         String codNotice = "CASH_ON_DELIVERY".equalsIgnoreCase(order.getPaymentMethod())
                 ? String.format("• COD Amount: Please keep exact cash of ₹%,.2f ready.", order.getTotalAmount())
                 : "• Contactless Prepaid Delivery: Secure OTP verification with delivery agent.";
@@ -146,16 +161,16 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
 
         String message = String.format(
                 "🚚 *Out for Delivery Today!*\n\n" +
-                        "*Namaste %s*, your SareeKart package for order *#%d* is out with our delivery partner.\n\n" +
+                        "*Namaste %s*, your SareeKart package for order *#%s* is out with our delivery partner.\n\n" +
                         "🔔 *Doorstep Instructions:*\n%s\n" +
                         "📍 *Destination:* %s\n\n" +
                         "Please verify the tamper-proof Silk Mark seal upon handover.",
-                user.getFirstName(), order.getId(), codNotice, destination
+                user.getFirstName(), orderRef, codNotice, destination
         );
 
         return processAndPersist(order.getId(), null, user, user.getFirstName(), mobile,
                 WhatsAppEventType.OUT_FOR_DELIVERY, "tpl_out_for_delivery_v1", message,
-                order.getTrackingNumber(), order.getCourierPartner(), null);
+                order.getTrackingNumber() != null ? order.getTrackingNumber() : orderRef, order.getCourierPartner(), null);
     }
 
     @Override
@@ -170,19 +185,20 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
             return null;
         }
 
+        String orderRef = getOrderReference(order);
         String message = String.format(
                 "🌸 *Delivered with Reverence!*\n\n" +
-                        "*Namaste %s*, order *#%d* has been safely delivered to your doorstep.\n\n" +
+                        "*Namaste %s*, order *#%s* has been safely delivered to your doorstep.\n\n" +
                         "🥻 We hope your authentic handloom drape brings timeless elegance to your celebrations.\n\n" +
                         "📖 *Silk Care & Preservation Guide:*\nhttps://sareekart.com/saree-care\n\n" +
-                        "🔄 *Doorstep Returns/Exchanges:* Eligible for 7 days via https://sareekart.com/orders\n\n" +
+                        "🔄 *Doorstep Returns/Exchanges:* Eligible for 7 days via https://sareekart.com/orders/track?orderNumber=%s\n\n" +
                         "Thank you for sustaining India's generational weaving heritage.",
-                user.getFirstName(), order.getId()
+                user.getFirstName(), orderRef, orderRef
         );
 
         return processAndPersist(order.getId(), null, user, user.getFirstName(), mobile,
                 WhatsAppEventType.DELIVERED, "tpl_order_delivered_v1", message,
-                order.getTrackingNumber(), order.getCourierPartner(), null);
+                order.getTrackingNumber() != null ? order.getTrackingNumber() : orderRef, order.getCourierPartner(), null);
     }
 
     @Override
@@ -197,20 +213,22 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
             return null;
         }
 
+        String returnRef = getReturnReference(returnRequest);
+        String orderRef = returnRequest.getOrder() != null ? getOrderReference(returnRequest.getOrder()) : "SK-ORD-000000";
         String courier = returnRequest.getReverseCourier() != null ? returnRequest.getReverseCourier() : "Blue Dart Reverse Logistics";
-        String awb = returnRequest.getReverseTrackingNumber() != null ? returnRequest.getReverseTrackingNumber() : "REV-AWB-" + returnRequest.getId();
+        String awb = returnRequest.getReverseTrackingNumber() != null ? returnRequest.getReverseTrackingNumber() : "REV-AWB-" + returnRef;
         String trackingUrl = buildTrackingUrl(courier, awb);
 
         String message = String.format(
                 "🔄 *Reverse Pickup Scheduled!*\n\n" +
-                        "*Namaste %s*, reverse pickup for return claim *#%d* (Order *#%d*) is scheduled.\n\n" +
+                        "*Namaste %s*, reverse pickup for return claim *#%s* (Order *#%s*) is scheduled.\n\n" +
                         "🚚 *Reverse Courier Partner:* %s\n" +
                         "🔖 *Return AWB:* %s\n\n" +
                         "📦 *Handover Instructions:*\n" +
                         "• Keep the saree securely packed in the original box with Silk Mark tags.\n" +
                         "• The courier partner will inspect exterior seal before issuing pickup receipt.\n\n" +
                         "Track Reverse Shipment:\n%s",
-                user.getFirstName(), returnRequest.getId(), returnRequest.getOrder() != null ? returnRequest.getOrder().getId() : 0,
+                user.getFirstName(), returnRef, orderRef,
                 courier, awb, trackingUrl
         );
 
@@ -400,9 +418,20 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
             WhatsAppEventType eventType, String templateName, String content,
             String trackingNumber, String courier, String trackingUrl) {
 
-        boolean isOptedIn = user == null || user.getWhatsappOptIn() == null || user.getWhatsappOptIn();
+        String normalizedPhone = (identityService != null && phone != null) ? identityService.normalizePhoneNumber(phone) : (phone != null ? phone.replaceAll("\\D", "") : "");
+        boolean contactOptedOut = false;
+        if (contactRepository != null && phone != null) {
+            Optional<WhatsAppContact> contactOpt = contactRepository.findByPhoneNumber(phone)
+                    .or(() -> contactRepository.findByPhoneNumber(normalizedPhone));
+            if (contactOpt.isPresent() && Boolean.FALSE.equals(contactOpt.get().getOptedIn())) {
+                contactOptedOut = true;
+            }
+        }
+        boolean userOptedOut = (user != null && Boolean.FALSE.equals(user.getWhatsappOptIn()));
+        boolean isOptedIn = !contactOptedOut && !userOptedOut;
+
         if (!isOptedIn) {
-            log.info("User {} has opted out of WhatsApp updates; suppressing message", user != null ? user.getEmail() : phone);
+            log.info("Recipient {} (user={}) has opted out of WhatsApp updates; suppressing message", phone, user != null ? user.getEmail() : "guest");
             WhatsAppNotificationLog suppressedLog = WhatsAppNotificationLog.builder()
                     .orderId(orderId)
                     .returnRequestId(returnRequestId)
@@ -532,5 +561,15 @@ public class WhatsAppNotificationServiceImpl implements WhatsAppNotificationServ
                 .simulated(entity.getSimulated())
                 .createdAtFormatted(entity.getCreatedAt() != null ? entity.getCreatedAt().format(DATE_FORMATTER) : "Just now")
                 .build();
+    }
+
+    private String getOrderReference(Order order) {
+        if (order == null) return "SK-ORD-000000";
+        return String.format("SK-ORD-%06d", order.getId() != null ? order.getId() : 0);
+    }
+
+    private String getReturnReference(ReturnRequest returnRequest) {
+        if (returnRequest == null) return "SK-RET-000000";
+        return String.format("SK-RET-%06d", returnRequest.getId() != null ? returnRequest.getId() : 0);
     }
 }

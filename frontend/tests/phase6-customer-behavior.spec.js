@@ -31,7 +31,9 @@ test.describe('Phase 6 — Customer Behavior & Telemetry Suite', () => {
           } else if (postData.eventType) {
             interceptedEvents.push(postData);
           }
-        } catch (e) {}
+        } catch {
+          // ignore non-JSON post data
+        }
       }
       await route.continue();
     });
@@ -60,7 +62,9 @@ test.describe('Phase 6 — Customer Behavior & Telemetry Suite', () => {
           const postData = route.request().postDataJSON();
           if (postData.events) interceptedEvents.push(...postData.events);
           else if (postData.eventType) interceptedEvents.push(postData);
-        } catch (e) {}
+        } catch {
+          // ignore non-JSON post data
+        }
       }
       await route.continue();
     });
@@ -87,7 +91,9 @@ test.describe('Phase 6 — Customer Behavior & Telemetry Suite', () => {
       try {
         const data = route.request().postDataJSON();
         identifySessionId = data.sessionId;
-      } catch (e) {}
+      } catch {
+        // ignore non-JSON post data
+      }
       await route.continue();
     });
 

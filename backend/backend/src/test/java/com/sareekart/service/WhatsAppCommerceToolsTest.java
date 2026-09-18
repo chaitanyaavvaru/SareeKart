@@ -164,7 +164,7 @@ class WhatsAppCommerceToolsTest {
     }
 
     @Test
-    @DisplayName("escalateToHuman sets status to OPEN, sets ESCALATED_HUMAN_REQUEST tag, and broadcasts")
+    @DisplayName("escalateToHuman sets status to HUMAN_ESCALATION, sets ESCALATED_HUMAN_REQUEST tag, and broadcasts")
     void testEscalateToHuman_Success() {
         WhatsAppContact contact = WhatsAppContact.builder().id(1L).phoneNumber("9876543210").build();
         Conversation conv = Conversation.builder().id(42L).contact(contact).status(ConversationStatus.BOT_HANDLING).build();
@@ -176,7 +176,7 @@ class WhatsAppCommerceToolsTest {
         );
 
         assertThat(result.escalated()).isTrue();
-        assertThat(conv.getStatus()).isEqualTo(ConversationStatus.OPEN);
+        assertThat(conv.getStatus()).isEqualTo(ConversationStatus.HUMAN_ESCALATION);
         assertThat(conv.getTags()).isEqualTo("ESCALATED_HUMAN_REQUEST");
         verify(conversationRepository).save(conv);
         verify(messagingTemplate).convertAndSend(eq("/topic/admin/inbox"), any(Object.class));

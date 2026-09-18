@@ -88,11 +88,24 @@ class WhatsAppWebhookControllerTest {
     }
 
     @Test
-    @DisplayName("POST receiveWebhook handles null/empty payload gracefully with 200 OK")
+    @DisplayName("POST receiveWebhook handles signed null/empty payload gracefully with 200 OK")
     void testReceiveWebhook_EmptyPayload() {
+        when(signatureValidator.isValid(any(byte[].class), eq("sha256=hash"))).thenReturn(true);
+
         ResponseEntity<Void> response = controller.receiveWebhook("sha256=hash", new byte[0]);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(webhookService, never()).processWebhook(any());
+    }
+
+    @Test
+    @DisplayName("POST receiveWebhook rejects empty payload when signature is missing or invalid")
+    void testReceiveWebhook_EmptyPayload_InvalidSignature() {
+        when(signatureValidator.isValid(any(byte[].class), isNull())).thenReturn(false);
+
+        ResponseEntity<Void> response = controller.receiveWebhook(null, new byte[0]);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         verify(webhookService, never()).processWebhook(any());
     }
 }

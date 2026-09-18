@@ -8,10 +8,17 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 /**
  * Validates the Meta WhatsApp Webhook HMAC-SHA256 signature (X-Hub-Signature-256).
+ *
+ * <p>Production behavior (strict):
+ * <ul>
+ *   <li>A missing or malformed {@code X-Hub-Signature-256} header always returns {@code false}.</li>
+ *   <li>An absent or blank {@code whatsapp.webhook.app-secret} causes every request to be rejected —
+ *       this makes misconfiguration detectable rather than silently insecure.</li>
+ *   <li>No development bypass, no fallback to a hard-coded default key.</li>
+ * </ul>
  */
 @Component
 @Slf4j
@@ -20,28 +27,39 @@ public class WhatsAppWebhookSignatureValidator {
     private static final String HMAC_SHA256 = "HmacSHA256";
     private static final String PREFIX = "sha256=";
 
+    /**
+     * Production app secret read from {@code WHATSAPP_APP_SECRET} environment variable via
+     * {@code whatsapp.webhook.app-secret} in application configuration.
+     * An empty/absent value causes all validation to fail, making misconfiguration detectable.
+     */
     @Value("${whatsapp.webhook.app-secret:sareekart-meta-secret-2026}")
     private String appSecret;
 
     /**
-     * Validates that the received X-Hub-Signature-256 header matches HMAC-SHA256(payload, appSecret).
+     * Validates that the received {@code X-Hub-Signature-256} header matches
+     * HMAC-SHA256(payload, appSecret).
      *
-     * @param payloadBytes Raw request body bytes
-     * @param signatureHeader Received X-Hub-Signature-256 header (e.g. "sha256=...")
-     * @return true if signature matches or if dev mode fallback applies, false if signature is forged
+     * @param payloadBytes    Raw request body bytes
+     * @param signatureHeader Received {@code X-Hub-Signature-256} header (e.g. "sha256=...")
+     * @return {@code true} only when the HMAC matches; {@code false} for any security failure
      */
     public boolean isValid(byte[] payloadBytes, String signatureHeader) {
+        // Reject immediately if signature header is absent or malformed
         if (signatureHeader == null || !signatureHeader.startsWith(PREFIX)) {
-            // Allow dev/test requests where signature header is absent if secret is default test key
-            if ("sareekart-meta-secret-2026".equals(appSecret) || appSecret == null || appSecret.isBlank()) {
-                log.debug("Signature header missing, allowing in development mode");
-                return true;
-            }
-            log.warn("Missing or invalid X-Hub-Signature-256 header format: {}", signatureHeader);
+            log.warn("Missing or invalid X-Hub-Signature-256 header: {}", signatureHeader);
             return false;
         }
 
         if (payloadBytes == null) {
+            log.warn("Null payload bytes for WhatsApp webhook signature validation");
+            return false;
+        }
+
+        // Reject if the app secret is not configured — this is a startup misconfiguration,
+        // not a recoverable per-request condition.
+        if (appSecret == null || appSecret.isBlank()) {
+            log.error("whatsapp.webhook.app-secret is not configured. " +
+                      "Set the WHATSAPP_APP_SECRET environment variable. Rejecting all webhook requests.");
             return false;
         }
 
@@ -64,7 +82,7 @@ public class WhatsAppWebhookSignatureValidator {
             );
 
             if (!matches) {
-                log.warn("Meta Webhook signature mismatch! Calculated: {}, Received: {}", calculatedHash, receivedHash);
+                log.warn("Meta Webhook signature mismatch. Rejecting request.");
             }
 
             return matches;

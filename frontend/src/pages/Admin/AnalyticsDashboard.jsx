@@ -1094,55 +1094,147 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
 
-            {/* 4-Stage Conversion Funnel Visualizer */}
+            {/* Conversion Metrics Summary Bar */}
+            {behavior?.funnelMetrics && (
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6 text-xs">
+                <div className="border border-[#DDD8CF] bg-[#FAF8F5] p-2.5 rounded-sm">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Overall Conv.</p>
+                  <p className="text-base font-bold text-emerald-800">{behavior.funnelMetrics.overallConversionRate || 0}%</p>
+                  <span className="text-[9px] text-[#71817A]">Landing → Order</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-[#FAF8F5] p-2.5 rounded-sm">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Detail → Bag</p>
+                  <p className="text-base font-bold text-[#17211F]">{behavior.funnelMetrics.detailToCartRate || 0}%</p>
+                  <span className="text-[9px] text-[#71817A]">View to Cart</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-[#FAF8F5] p-2.5 rounded-sm">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Bag → Checkout</p>
+                  <p className="text-base font-bold text-[#17211F]">{behavior.funnelMetrics.cartToCheckoutRate || 0}%</p>
+                  <span className="text-[9px] text-[#71817A]">Cart to Checkout</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-[#FAF8F5] p-2.5 rounded-sm">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Checkout → Pay</p>
+                  <p className="text-base font-bold text-[#17211F]">{behavior.funnelMetrics.checkoutToPaymentRate || 0}%</p>
+                  <span className="text-[9px] text-[#71817A]">Payment initiated</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-[#FAF8F5] p-2.5 rounded-sm">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Pay → Order</p>
+                  <p className="text-base font-bold text-[#1E6A62]">{behavior.funnelMetrics.paymentToOrderRate || 0}%</p>
+                  <span className="text-[9px] text-[#71817A]">Payment success</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-[#FAF8F5] p-2.5 rounded-sm">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Cart Abandon</p>
+                  <p className="text-base font-bold text-rose-600">{behavior.funnelMetrics.cartAbandonmentRate || 0}%</p>
+                  <span className="text-[9px] text-[#71817A]">Uncompleted bags</span>
+                </div>
+              </div>
+            )}
+
+            {/* 8-Stage eCommerce Conversion Funnel Visualizer */}
             <div className="mt-6">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#71817A] mb-3">
-                4-Stage Behavior-Driven Conversion Funnel
-              </h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {(behavior?.funnel || [
-                  { stage: 'PRODUCT_VIEW', label: 'Product View', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 100, overallConversionRate: 100 },
-                  { stage: 'ADD_TO_CART', label: 'Add to Cart', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
-                  { stage: 'CHECKOUT_INITIATED', label: 'Checkout Started', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
-                  { stage: 'ORDER_COMPLETED', label: 'Order Completed', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#71817A]">
+                  Full-Funnel eCommerce Conversion Flow (8 Stages)
+                </h3>
+                <span className="text-[10px] text-[#71817A] italic">Phase 13 Stage 5 Telemetry</span>
+              </div>
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+                {(behavior?.ecommerceFunnel || behavior?.funnel || [
+                  { stage: 'LANDING_PAGE_VIEW', label: '1. Landing', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 100, overallConversionRate: 100 },
+                  { stage: 'PRODUCT_VIEW', label: '2. Product View', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                  { stage: 'SEARCH_QUERY', label: '3. Search', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                  { stage: 'CATEGORY_VIEW', label: '4. Category', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                  { stage: 'ADD_TO_CART', label: '5. Added to Bag', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                  { stage: 'CHECKOUT_INITIATED', label: '6. Checkout Started', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                  { stage: 'PAYMENT_ATTEMPT', label: '7. Payment Step', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
+                  { stage: 'ORDER_COMPLETED', label: '8. Purchase Completed', totalEvents: 0, uniqueSessions: 0, conversionRateFromPrevious: 0, overallConversionRate: 0 },
                 ]).map((stage, idx) => {
-                  const maxSessions = Math.max(1, behavior?.funnel?.[0]?.uniqueSessions || 1);
+                  const funnelList = behavior?.ecommerceFunnel || behavior?.funnel || [];
+                  const maxSessions = Math.max(1, funnelList[0]?.uniqueSessions || 1);
                   const barPercent = Math.min(100, Math.max(4, Math.round(((stage.uniqueSessions || stage.totalEvents || 0) / maxSessions) * 100)));
                   return (
-                    <div key={stage.stage || idx} className="border border-[#DDD8CF] bg-[#FAF8F5] p-4 flex flex-col justify-between">
+                    <div key={stage.stage || idx} className="border border-[#DDD8CF] bg-[#FAF8F5] p-3 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-[#71817A]">
-                            Stage {idx + 1}: {stage.label || stage.stage}
-                          </span>
-                          <span className="text-[11px] font-bold text-emerald-800">
-                            {idx === 0 ? 'Entry' : `${stage.conversionRateFromPrevious?.toFixed(1) || 0}% conv`}
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#71817A] truncate">
+                            {stage.label || stage.stage}
                           </span>
                         </div>
-                        <p className="mt-2 font-serif text-2xl font-medium text-[#17211F]">
+                        <p className="mt-1.5 font-serif text-xl font-medium text-[#17211F]">
                           {formatNumber(stage.uniqueSessions || 0)}
-                          <span className="ml-1 text-xs font-sans font-normal text-[#71817A]">sessions</span>
+                          <span className="ml-1 text-[10px] font-sans font-normal text-[#71817A]">sess</span>
                         </p>
-                        <p className="text-[11px] text-[#71817A]">
-                          {formatNumber(stage.totalEvents || 0)} total occurrences
+                        <p className="text-[10px] text-[#71817A]">
+                          {formatNumber(stage.totalEvents || 0)} evts
                         </p>
                       </div>
 
-                      <div className="mt-4">
-                        <div className="h-2 w-full rounded-full bg-[#EAE4D9]">
+                      <div className="mt-3">
+                        <div className="h-1.5 w-full rounded-full bg-[#EAE4D9]">
                           <div
-                            className="h-2 rounded-full bg-[#1E6A62] transition-all"
+                            className="h-1.5 rounded-full bg-[#1E6A62] transition-all"
                             style={{ width: `${barPercent}%` }}
                           />
                         </div>
-                        <div className="mt-1 flex justify-between text-[10px] text-[#71817A]">
-                          <span>Funnel share</span>
-                          <span className="font-bold text-[#17211F]">{stage.overallConversionRate?.toFixed(1) || 0}% overall</span>
+                        <div className="mt-1 flex items-center justify-between text-[9px] text-[#71817A]">
+                          <span>{idx === 0 ? 'Entry' : `${stage.conversionRateFromPrevious?.toFixed(1) || 0}% step`}</span>
+                          <span className="font-bold text-[#17211F]">{stage.overallConversionRate?.toFixed(1) || 0}% ovr</span>
                         </div>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Auxiliary Channel Engagement Grid */}
+            <div className="mt-6 border border-[#DDD8CF] bg-[#FAF8F5] p-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#71817A] mb-3">
+                Auxiliary Commerce Channels & Interaction Telemetry
+              </h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                <div className="border border-[#DDD8CF] bg-white p-3 rounded-xs">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Wishlist Saves</p>
+                  <p className="text-lg font-serif font-bold text-[#17211F]">
+                    {formatNumber(behavior?.channelEngagement?.wishlist || behavior?.eventCountsByType?.ADD_TO_WISHLIST || 0)}
+                  </p>
+                  <span className="text-[10px] text-[#71817A]">Saved drapes</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-white p-3 rounded-xs">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Recommendations</p>
+                  <p className="text-lg font-serif font-bold text-[#17211F]">
+                    {formatNumber(behavior?.channelEngagement?.recommendations || behavior?.eventCountsByType?.RECOMMENDATION_CLICK || 0)}
+                  </p>
+                  <span className="text-[10px] text-[#71817A]">Curated & Visual Clicks</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-white p-3 rounded-xs">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">AI Stylist</p>
+                  <p className="text-lg font-serif font-bold text-[#1E6A62]">
+                    {formatNumber(behavior?.channelEngagement?.aiStylist || behavior?.eventCountsByType?.AI_STYLIST_ENGAGE || 0)}
+                  </p>
+                  <span className="text-[10px] text-[#71817A]">Consultations</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-white p-3 rounded-xs">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">WhatsApp Commerce</p>
+                  <p className="text-lg font-serif font-bold text-emerald-800">
+                    {formatNumber(behavior?.channelEngagement?.whatsapp || behavior?.eventCountsByType?.WHATSAPP_COMMERCE_ENGAGE || 0)}
+                  </p>
+                  <span className="text-[10px] text-[#71817A]">Concierge Chats</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-white p-3 rounded-xs">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Bridal Trousseau</p>
+                  <p className="text-lg font-serif font-bold text-purple-800">
+                    {formatNumber(behavior?.channelEngagement?.trousseau || behavior?.eventCountsByType?.TROUSSEAU_ENGAGE || 0)}
+                  </p>
+                  <span className="text-[10px] text-[#71817A]">Studio & Shared Boards</span>
+                </div>
+                <div className="border border-[#DDD8CF] bg-white p-3 rounded-xs">
+                  <p className="text-[10px] font-bold uppercase text-[#71817A]">Share Links</p>
+                  <p className="text-lg font-serif font-bold text-[#17211F]">
+                    {formatNumber(behavior?.channelEngagement?.shareLinks || behavior?.eventCountsByType?.SHARE_LINK_ENGAGE || 0)}
+                  </p>
+                  <span className="text-[10px] text-[#71817A]">Social / Referral visits</span>
+                </div>
               </div>
             </div>
 

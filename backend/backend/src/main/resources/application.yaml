@@ -7,58 +7,99 @@ spring:
       exclude: "org/apache/pdfbox/**,org/apache/fontbox/**"
 
   datasource:
-    url: jdbc:mysql://localhost:3306/sareekart_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: root
-    password: root123
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/sareekart_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root123}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: SareeKartHikariPool
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:15}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
+        format_sql: ${SPRING_JPA_FORMAT_SQL:true}
 
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 50MB
 
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 server:
-  port: 8081
+  port: ${PORT:8081}
+  shutdown: graceful
 
-# JWT Configuration (for Phase 3)
+app:
+  canonical-domain: ${APP_CANONICAL_DOMAIN:https://sareekart.com}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+# JWT Configuration
 jwt:
-  secret: SareeKartSecretKey2024ForJWTTokenGenerationAndValidation
-  expiration: 86400000
+  secret: ${JWT_SECRET:SareeKartSecretKey2024ForJWTTokenGenerationAndValidation}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 logging:
   level:
-    com.sareekart: DEBUG
-    org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
+    com.sareekart: ${LOG_LEVEL_SAREEKART:DEBUG}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
 
 razorpay:
   key:
-    # Set these in the environment. Never commit Razorpay credentials here.
     id: ${RAZORPAY_KEY_ID:}
     secret: ${RAZORPAY_KEY_SECRET:}
+  webhook:
+    secret: ${RAZORPAY_WEBHOOK_SECRET:}
 
 whatsapp:
   api:
-    token: "dummy_whatsapp_token"
-    phone-number-id: "dummy_phone_id"
+    token: ${WHATSAPP_API_TOKEN:dummy_whatsapp_token}
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:dummy_phone_id}
   webhook:
-    verify-token: "sareekart-verify-token"
+    verify-token: ${WHATSAPP_WEBHOOK_VERIFY_TOKEN:sareekart-verify-token}
+    # Production HMAC secret from Meta App Dashboard. Must be set via WHATSAPP_APP_SECRET
+    # environment variable in production. An absent/empty secret causes the signature validator
+    # to reject ALL webhook requests, making misconfiguration detectable.
+    app-secret: ${WHATSAPP_APP_SECRET:sareekart-meta-secret-2026}
 
-spring.ai.openai.api-key: "sk-proj-dummy-key"
+
+spring.ai.openai.api-key: ${OPENAI_API_KEY:sk-proj-dummy-key}
 
 neo4j:
   uri: ${NEO4J_URI:bolt://localhost:7687}
   username: ${NEO4J_USERNAME:neo4j}
   password: ${NEO4J_PASSWORD:sareekart2026}
   enabled: ${NEO4J_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    neo4j:
+      enabled: false
+  info:
+    env:
+      enabled: true
 

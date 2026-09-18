@@ -59,11 +59,6 @@ export default function ManageLogistics() {
     }
   };
 
-  useEffect(() => {
-    fetchOverrides();
-    runDiagnostic('560001');
-  }, []);
-
   const runDiagnostic = async (pin) => {
     const clean = String(pin).replace(/\D/g, '');
     if (clean.length !== 6) {
@@ -85,6 +80,11 @@ export default function ManageLogistics() {
       setTesting(false);
     }
   };
+
+  useEffect(() => {
+    fetchOverrides();
+    runDiagnostic('560001');
+  }, []);
 
   const handleDeleteOverride = async (pincode) => {
     if (!window.confirm(`Are you sure you want to delete the custom override for PIN ${pincode}?`)) {

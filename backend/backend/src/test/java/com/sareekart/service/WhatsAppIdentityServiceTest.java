@@ -57,6 +57,39 @@ class WhatsAppIdentityServiceTest {
     }
 
     @Test
+    @DisplayName("Normalizes phone numbers to standard E.164 international format (+91...)")
+    void testNormalizeToE164() {
+        assertThat(identityService.normalizeToE164("+919876543210")).isEqualTo("+919876543210");
+        assertThat(identityService.normalizeToE164("919876543210")).isEqualTo("+919876543210");
+        assertThat(identityService.normalizeToE164("09876543210")).isEqualTo("+919876543210");
+        assertThat(identityService.normalizeToE164("9876543210")).isEqualTo("+919876543210");
+        assertThat(identityService.normalizeToE164("+91 98765-43210")).isEqualTo("+919876543210");
+    }
+
+    @Test
+    @DisplayName("Formats phone number for Meta WhatsApp Cloud API recipient parameter (91...)")
+    void testToMetaRecipientPhone() {
+        assertThat(identityService.toMetaRecipientPhone("+919876543210")).isEqualTo("919876543210");
+        assertThat(identityService.toMetaRecipientPhone("919876543210")).isEqualTo("919876543210");
+        assertThat(identityService.toMetaRecipientPhone("09876543210")).isEqualTo("919876543210");
+        assertThat(identityService.toMetaRecipientPhone("9876543210")).isEqualTo("919876543210");
+        assertThat(identityService.toMetaRecipientPhone("+91 98765-43210")).isEqualTo("919876543210");
+    }
+
+    @Test
+    @DisplayName("Validates valid and invalid Indian mobile phone formats")
+    void testIsValidIndianMobile() {
+        assertThat(identityService.isValidIndianMobile("+919876543210")).isTrue();
+        assertThat(identityService.isValidIndianMobile("919876543210")).isTrue();
+        assertThat(identityService.isValidIndianMobile("09876543210")).isTrue();
+        assertThat(identityService.isValidIndianMobile("9876543210")).isTrue();
+        assertThat(identityService.isValidIndianMobile("+91 98765-43210")).isTrue();
+        assertThat(identityService.isValidIndianMobile("12345")).isFalse();
+        assertThat(identityService.isValidIndianMobile("0123456789")).isFalse();
+        assertThat(identityService.isValidIndianMobile(null)).isFalse();
+    }
+
+    @Test
     @DisplayName("resolveContact returns existing contact if already present")
     void testResolveContact_Existing() {
         WhatsAppContact existing = WhatsAppContact.builder()

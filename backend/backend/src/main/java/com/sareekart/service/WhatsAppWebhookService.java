@@ -28,6 +28,7 @@ public class WhatsAppWebhookService {
     private final WhatsAppIdempotencyService idempotencyService;
     private final WhatsAppIdentityService identityService;
     private final WhatsAppAiCommerceService aiCommerceService;
+    private final WhatsAppApiClient whatsAppApiClient;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Qualifier("whatsappTaskExecutor")
@@ -76,7 +77,44 @@ public class WhatsAppWebhookService {
         String profileName = (contactInfo != null && contactInfo.getProfile() != null) ? contactInfo.getProfile().getName() : "Customer";
         WhatsAppContact contact = identityService.resolveContact(phoneNumber, profileName);
 
-        // 3. Find or create Conversation
+        // 3. STOP/START Regulatory Intercept — runs before message persistence or AI dispatch.
+        //    These are regulatory control messages; they are NOT stored and NOT sent to AI commerce.
+        if ("text".equals(msg.getType()) && msg.getText() != null) {
+            String body = msg.getText().getBody();
+            if (body != null) {
+                String normalized = body.trim().toUpperCase();
+                if (isOptOutKeyword(normalized)) {
+                    contact.setOptedIn(false);
+                    contact.setOptInUpdatedAt(LocalDateTime.now());
+                    if (contact.getUser() != null) {
+                        contact.getUser().setWhatsappOptIn(false);
+                    }
+                    contactRepository.save(contact);
+                    log.info("WhatsApp contact {} sent opt-out keyword '{}'. Setting optedIn=false.", phoneNumber, body.trim());
+                    // Send a confirmation reply but do NOT persist as WhatsAppMessage or route to AI
+                    sendOptOutConfirmation(phoneNumber);
+                    return;
+                } else if (isOptInKeyword(normalized)) {
+                    contact.setOptedIn(true);
+                    contact.setOptInUpdatedAt(LocalDateTime.now());
+                    if (contact.getUser() != null) {
+                        contact.getUser().setWhatsappOptIn(true);
+                    }
+                    contactRepository.save(contact);
+                    log.info("WhatsApp contact {} sent opt-in keyword '{}'. Setting optedIn=true.", phoneNumber, body.trim());
+                    sendOptInConfirmation(phoneNumber);
+                    return;
+                }
+            }
+        }
+
+        // 4. If contact has opted out, suppress further processing for outbound-restricted messages
+        if (!contact.isOptedIn()) {
+            log.info("WhatsApp contact {} is opted out. Suppressing message from AI commerce processing.", phoneNumber);
+            return;
+        }
+
+        // 5. Find or create Conversation
         Conversation conversation = conversationRepository
                 .findFirstByContactAndStatusNotOrderByUpdatedAtDesc(contact, ConversationStatus.CLOSED)
                 .orElseGet(() -> {
@@ -87,14 +125,14 @@ public class WhatsAppWebhookService {
                     return conversationRepository.save(newConv);
                 });
 
-        // 4. Prevent duplicate message inserts
+        // 6. Prevent duplicate message inserts
         WhatsAppMessage existingMsg = messageRepository.findByWamId(wamId);
         if (existingMsg != null) {
             log.info("Message already exists in repository (wam_id: {}), skipping.", wamId);
             return;
         }
 
-        // 5. Parse Message Content and Type
+        // 7. Parse Message Content and Type
         LocalDateTime msgTime;
         try {
             msgTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(Long.parseLong(msg.getTimestamp())), ZoneId.systemDefault());
@@ -142,7 +180,7 @@ public class WhatsAppWebhookService {
         // Broadcast to Admin Dashboard instantly via WebSocket
         messagingTemplate.convertAndSend("/topic/admin/inbox", savedMsg);
 
-        // 6. Trigger AI Commerce response if BOT_HANDLING
+        // 8. Trigger AI Commerce response if BOT_HANDLING
         if (conversation.getStatus() == ConversationStatus.BOT_HANDLING && (type == MessageType.TEXT || type == MessageType.INTERACTIVE)) {
             final String finalContent = content;
             final Long convId = conversation.getId();
@@ -156,6 +194,56 @@ public class WhatsAppWebhookService {
             });
         } else {
             log.info("Conversation {} status is {}, suppressing automated bot response.", conversation.getId(), conversation.getStatus());
+        }
+    }
+
+    /**
+     * Returns {@code true} if the normalized (uppercased, trimmed) message body is a regulatory
+     * opt-out keyword per CTIA/Meta guidelines.
+     */
+    private boolean isOptOutKeyword(String normalizedBody) {
+        return "STOP".equals(normalizedBody)
+                || "UNSUBSCRIBE".equals(normalizedBody)
+                || "CANCEL".equals(normalizedBody)
+                || "QUIT".equals(normalizedBody)
+                || "END".equals(normalizedBody);
+    }
+
+    /**
+     * Returns {@code true} if the normalized (uppercased, trimmed) message body is a regulatory
+     * opt-in keyword per CTIA/Meta guidelines.
+     */
+    private boolean isOptInKeyword(String normalizedBody) {
+        return "START".equals(normalizedBody)
+                || "SUBSCRIBE".equals(normalizedBody)
+                || "JOIN".equals(normalizedBody)
+                || "YES".equals(normalizedBody)
+                || "UNSTOP".equals(normalizedBody);
+    }
+
+    /**
+     * Sends a brief opt-out confirmation to the contact via WhatsApp.
+     * Failure is silently logged — it must never propagate upward.
+     */
+    private void sendOptOutConfirmation(String phoneNumber) {
+        try {
+            whatsAppApiClient.sendTextMessage(phoneNumber,
+                    "You have been unsubscribed from WhatsApp notifications. Text START to resume.");
+        } catch (Exception e) {
+            log.warn("Failed to send opt-out confirmation to {}: {}", phoneNumber, e.getMessage());
+        }
+    }
+
+    /**
+     * Sends a brief opt-in confirmation to the contact via WhatsApp.
+     * Failure is silently logged — it must never propagate upward.
+     */
+    private void sendOptInConfirmation(String phoneNumber) {
+        try {
+            whatsAppApiClient.sendTextMessage(phoneNumber,
+                    "Welcome back! You are now subscribed to SareeKart updates on WhatsApp.");
+        } catch (Exception e) {
+            log.warn("Failed to send opt-in confirmation to {}: {}", phoneNumber, e.getMessage());
         }
     }
 

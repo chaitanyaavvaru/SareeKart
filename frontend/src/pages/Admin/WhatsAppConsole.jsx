@@ -29,20 +29,6 @@ export default function WhatsAppConsole() {
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
-  useEffect(() => {
-    if (consoleTab === 'dispatch') {
-      loadData();
-    } else {
-      loadConversations();
-    }
-  }, [consoleTab, selectedEventType, convFilter]);
-
-  useEffect(() => {
-    if (selectedConv) {
-      loadMessages(selectedConv.id);
-    }
-  }, [selectedConv]);
-
   const loadData = async () => {
     setLoading(true);
     try {
@@ -85,6 +71,20 @@ export default function WhatsAppConsole() {
       setMsgLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (consoleTab === 'dispatch') {
+      loadData();
+    } else {
+      loadConversations();
+    }
+  }, [consoleTab, selectedEventType, convFilter]);
+
+  useEffect(() => {
+    if (selectedConv) {
+      loadMessages(selectedConv.id);
+    }
+  }, [selectedConv]);
 
   const handleResend = async (logId) => {
     try {

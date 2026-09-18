@@ -28,22 +28,16 @@ export default function AiStylistModal({
   const [error, setError] = useState('');
   const [selectedLookIndex, setSelectedLookIndex] = useState(0);
 
-  useEffect(() => {
-    if (isOpen && product) {
-      loadStyling();
-    }
-  }, [isOpen, product]);
-
   const loadStyling = async () => {
     setLoading(true);
     setError('');
     try {
       const res = await aiStylistService.styleDrape({
-        productId: product.id,
-        sareeName: product.name,
-        fabric: product.fabric,
-        primaryColor: product.color,
-        occasion: product.occasion || 'Bridal / Wedding Festivities',
+        productId: product?.id,
+        sareeName: product?.name,
+        fabric: product?.fabric,
+        primaryColor: product?.color,
+        occasion: product?.occasion || 'Bridal / Wedding Festivities',
         zariType: 'Pure Zari'
       });
       if (res && res.data) {
@@ -56,6 +50,12 @@ export default function AiStylistModal({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && product) {
+      loadStyling();
+    }
+  }, [isOpen, product]);
 
   if (!isOpen) return null;
 

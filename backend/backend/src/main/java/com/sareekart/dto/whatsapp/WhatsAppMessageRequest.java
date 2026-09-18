@@ -45,6 +45,52 @@ public class WhatsAppMessageRequest {
     public static class Template {
         private String name;
         private Language language;
+        private List<TemplateComponent> components;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TemplateComponent {
+        private String type; // "header", "body", "button"
+        @JsonProperty("sub_type")
+        private String subType; // "url", "quick_reply"
+        private Integer index;
+        private List<TemplateParameter> parameters;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TemplateParameter {
+        private String type; // "text", "currency", "date_time", "image"
+        private String text;
+        private Currency currency;
+        private DateTime dateTime;
+        private Image image;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Currency {
+        @JsonProperty("fallback_value")
+        private String fallbackValue;
+        private String code;
+        @JsonProperty("amount_1000")
+        private Integer amount1000;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DateTime {
+        @JsonProperty("fallback_value")
+        private String fallbackValue;
     }
 
     @Data

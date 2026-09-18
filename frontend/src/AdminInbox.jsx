@@ -13,9 +13,9 @@ export default function AdminInbox() {
   const chatEndRef = useRef(null);
 
   useEffect(() => {
-    // In a real app, fetch conversations and messages for the active conversation from REST API first.
+    const wsUrl = import.meta.env.VITE_WS_URL || '/ws-sareekart';
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8081/ws-sareekart'),
+      webSocketFactory: () => new SockJS(wsUrl),
       reconnectDelay: 5000,
       onConnect: () => {
         console.log('Connected to STOMP');
