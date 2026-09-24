@@ -22,6 +22,8 @@ Operational activity will resume **ONLY** upon the empirical occurrence of one o
 1. **The apex domain `sareekart.com` cutover is propagated by the registrar.**
 2. **An authentic customer payment receipt (UTR) is verified for `Lead-002`.**
 
+*See companion operational runbook: [`docs/TRIGGER_BASED_RESUMPTION_PROTOCOL.md`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/docs/TRIGGER_BASED_RESUMPTION_PROTOCOL.md).*
+
 ---
 
 ## 1. Operational Resume Decision Tree
