@@ -27,6 +27,7 @@ import EmptyStudioState from './components/EmptyStudioState';
 import AddCeremonyModal from './components/AddCeremonyModal';
 import AddItemModal from './components/AddItemModal';
 import CollaboratorsDrawer from './components/CollaboratorsDrawer';
+import SEO from '../../components/common/SEO';
 
 export default function TrousseauStudioPage() {
   const dispatch = useDispatch();
@@ -253,6 +254,11 @@ export default function TrousseauStudioPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <SEO
+        title="Bridal Trousseau Studio | SareeKart"
+        description="Private bridal trousseau studio."
+        noindex={true}
+      />
       {/* 1-Click Cart Conversion Success Toast / Banner */}
       {conversionResult && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">

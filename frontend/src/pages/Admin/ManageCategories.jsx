@@ -189,6 +189,7 @@ export default function ManageCategories() {
       <SEO 
         title="Admin Category Taxonomy | SareeKart" 
         description="Manage SareeKart product categories, subcategories, and artisanal collections." 
+        noindex={true}
       />
 
       {/* Top Header */}

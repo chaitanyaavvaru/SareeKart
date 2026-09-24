@@ -120,6 +120,7 @@ export default function ExcelTransactionCenter() {
       <SEO
         title="Excel (.xlsx) Transaction Engine | SareeKart Admin"
         description="Dual-mode spreadsheet batch import engine for sales, stock adjustments, customer bills, and supplier purchase records."
+        noindex={true}
       />
 
       {/* Header */}

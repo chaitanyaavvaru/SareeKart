@@ -6,7 +6,8 @@
 class MetaPixel {
   constructor() {
     this.initialized = false;
-    this.pixelId = import.meta.env.VITE_META_PIXEL_ID || null;
+    this.pixelId = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_META_PIXEL_ID) || null;
+    this.trackedPurchases = new Set();
 
     if (typeof window !== 'undefined' && this.pixelId) {
       this.init(this.pixelId);
@@ -77,6 +78,15 @@ class MetaPixel {
     });
   }
 
+  trackSearch(query, params = {}) {
+    if (!query) return;
+    this.track('Search', {
+      search_string: typeof query === 'string' ? query.trim() : String(query),
+      content_category: params.content_category || params.category || 'All',
+      ...params,
+    });
+  }
+
   trackAddToCart(item) {
     if (!item) return;
     this.track('AddToCart', {
@@ -101,11 +111,18 @@ class MetaPixel {
 
   trackPurchase(order) {
     if (!order) return;
+    const orderId = String(order.id || order.orderId || '');
+    if (orderId && this.trackedPurchases.has(orderId)) {
+      return; // Prevent duplicate Purchase events on re-renders / page reloads
+    }
+    if (orderId) {
+      this.trackedPurchases.add(orderId);
+    }
     this.track('Purchase', {
       value: order.totalAmount || order.total || 0,
       currency: 'INR',
       content_type: 'product',
-      order_id: String(order.id || order.orderId || ''),
+      order_id: orderId,
     });
   }
 }

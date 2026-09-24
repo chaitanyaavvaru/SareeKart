@@ -57,7 +57,7 @@ export default function Invoices() {
 
   return (
     <div className="min-h-screen bg-[#F7F4EE] text-[#17211F]">
-      <SEO title="Invoices | SareeKart" description="Download GST invoices for SareeKart orders." />
+      <SEO title="Invoices | SareeKart" description="Download GST invoices for SareeKart orders." noindex={true} />
 
       {/* Header */}
       <section className="bg-white shadow-xs">

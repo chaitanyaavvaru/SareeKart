@@ -482,6 +482,7 @@ export default function ProductDetailPage() {
         canonical={canonicalUrl}
         ogType="product"
         ogImage={primaryImage}
+        ogImageAlt={`${product.name} - Luxury Handloom Saree`}
         schemaData={[productSchema, breadcrumbSchema]}
       />
 

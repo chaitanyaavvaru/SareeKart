@@ -210,8 +210,6 @@ public class UserServiceImpl implements UserService {
             matches = true;
         } else if ("admin@sareekart.com".equalsIgnoreCase(normalizedEmail) && "SK-REC-ADMN-2026".equalsIgnoreCase(cleanKey)) {
             matches = true;
-        } else if (cleanKey.startsWith("SK-REC-") && cleanKey.length() >= 12 && user.getRecoveryKey() == null) {
-            matches = true;
         }
 
         if (!matches) {

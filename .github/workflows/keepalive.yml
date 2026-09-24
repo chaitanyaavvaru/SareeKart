@@ -1,0 +1,27 @@
+name: SareeKart Backend Keep-Alive
+
+on:
+  schedule:
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Actuator Health Endpoint
+        run: |
+          TARGET_HOST="${{ secrets.BACKEND_HOST }}"
+          if [ -z "$TARGET_HOST" ]; then
+            echo "Notice: BACKEND_HOST secret not configured. Skipping keep-alive probe."
+            exit 0
+          fi
+          CLEAN_HOST=$(echo "$TARGET_HOST" | sed -e 's|^https://||' -e 's|/$||')
+          echo "Pinging https://${CLEAN_HOST}/actuator/health..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "https://${CLEAN_HOST}/actuator/health" || echo "000")
+          echo "Health check HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Warning: Backend returned status $STATUS (may be awakening or asleep)"
+          else
+            echo "Backend is active and healthy (HTTP 200 UP)"
+          fi

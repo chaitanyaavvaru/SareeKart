@@ -14,6 +14,8 @@ public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
+    private String errorCode;
+    private String requestId;
 
     @Builder.Default
     private LocalDateTime timestamp = LocalDateTime.now();
@@ -45,6 +47,15 @@ public class ApiResponse<T> {
                 .success(false)
                 .message(message)
                 .data(data)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> error(String message, String errorCode, String requestId) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .errorCode(errorCode)
+                .requestId(requestId)
                 .build();
     }
 }

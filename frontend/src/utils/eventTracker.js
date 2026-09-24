@@ -1,5 +1,5 @@
-import api from '../api/axiosConfig';
-import metaPixel from './metaPixel';
+import api from '../api/axiosConfig.js';
+import metaPixel from './metaPixel.js';
 
 /**
  * Enterprise non-blocking customer behavior telemetry client for SareeKart.
@@ -185,11 +185,21 @@ class EventTracker {
       filters = resultCountOrFilters;
       resultCount = Number(metadata) || 0;
     }
+    const cleanQuery = String(query || '').trim();
     this.track('SEARCH_QUERY', 'SEARCH', null, {
-      query: String(query || '').trim(),
+      query: cleanQuery,
       resultCount,
       ...this.sanitizeMetadata(filters),
     }, true);
+    metaPixel.trackSearch(cleanQuery, {
+      content_category: filters.category || 'All',
+      result_count: resultCount,
+    });
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'search', {
+        search_term: cleanQuery,
+      });
+    }
   }
 
   trackCategoryView(categoryIdOrSlug, categoryName = '', metadata = {}) {

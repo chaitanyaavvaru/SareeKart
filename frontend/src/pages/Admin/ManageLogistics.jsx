@@ -165,7 +165,7 @@ export default function ManageLogistics() {
 
   return (
     <div className="min-h-screen bg-[#FBF9F4] py-8 text-[#17211F]">
-      <SEO title="Logistics & Delivery Matrix | SareeKart Artisan Staff" />
+      <SEO title="Logistics & Delivery Matrix | SareeKart Artisan Staff" noindex={true} />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
         
         {/* Header */}

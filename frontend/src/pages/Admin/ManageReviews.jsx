@@ -97,6 +97,7 @@ export default function ManageReviews() {
       <SEO
         title="Customer Reviews & Testimonial Moderation | SareeKart Admin"
         description="Moderate customer product reviews, verify purchase authentications, and curate featured handloom testimonials."
+        noindex={true}
       />
 
       {/* Header */}

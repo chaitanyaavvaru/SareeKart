@@ -23,6 +23,12 @@ spring:
     hibernate:
       ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     show-sql: ${SPRING_JPA_SHOW_SQL:true}
+
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -46,6 +52,8 @@ app:
     url: ${FRONTEND_URL:http://localhost:5173}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  auth:
+    expose-reset-token-in-response: ${EXPOSE_RESET_TOKEN_IN_RESPONSE:true}
 
 # JWT Configuration
 jwt:

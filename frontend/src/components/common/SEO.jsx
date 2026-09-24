@@ -1,5 +1,10 @@
 import { useEffect } from 'react';
-import { CANONICAL_DOMAIN, DEFAULT_OG_IMAGE, toAbsoluteImageUrl } from '../../utils/seoUtils';
+import {
+  CANONICAL_DOMAIN,
+  DEFAULT_OG_IMAGE,
+  toAbsoluteImageUrl,
+  isAutoPrivatePath,
+} from '../../utils/seoUtils';
 
 export default function SEO({
   title = "SareeKart | India's Premium Luxury Handloom Saree Platform",
@@ -9,6 +14,7 @@ export default function SEO({
   nofollow = false,
   ogType = "website",
   ogImage = DEFAULT_OG_IMAGE,
+  ogImageAlt = null,
   schemaData = null,
 }) {
   useEffect(() => {
@@ -31,10 +37,36 @@ export default function SEO({
       metaRobots.name = 'robots';
       document.head.appendChild(metaRobots);
     }
-    if (noindex) {
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const shouldNoindex = noindex || isAutoPrivatePath(currentPath);
+    if (shouldNoindex) {
       metaRobots.content = nofollow ? 'noindex, nofollow' : 'noindex, follow';
     } else {
       metaRobots.content = 'index, follow';
+    }
+
+    // 3b. Google Search Console Verification tag
+    const gscToken = typeof import.meta !== 'undefined' && import.meta.env?.VITE_GSC_VERIFICATION;
+    if (gscToken) {
+      let metaGsc = document.querySelector('meta[name="google-site-verification"]');
+      if (!metaGsc) {
+        metaGsc = document.createElement('meta');
+        metaGsc.name = 'google-site-verification';
+        document.head.appendChild(metaGsc);
+      }
+      metaGsc.content = gscToken;
+    }
+
+    // 3c. Meta / Facebook Domain Verification tag
+    const metaVerificationToken = typeof import.meta !== 'undefined' && import.meta.env?.VITE_META_DOMAIN_VERIFICATION;
+    if (metaVerificationToken) {
+      let metaFb = document.querySelector('meta[name="facebook-domain-verification"]');
+      if (!metaFb) {
+        metaFb = document.createElement('meta');
+        metaFb.name = 'facebook-domain-verification';
+        document.head.appendChild(metaFb);
+      }
+      metaFb.content = metaVerificationToken;
     }
 
     // 4. Canonical link tag
@@ -54,6 +86,7 @@ export default function SEO({
       'og:description': description,
       'og:type': ogType,
       'og:image': absoluteOgImage,
+      'og:image:alt': ogImageAlt || `${title} - SareeKart Handloom`,
       'og:url': resolvedCanonical,
       'og:site_name': 'SareeKart',
     };
@@ -115,7 +148,7 @@ export default function SEO({
     } else {
       schemaScript.textContent = JSON.stringify(schemaData || defaultSchema);
     }
-  }, [title, description, canonical, noindex, ogType, ogImage, schemaData]);
+  }, [title, description, canonical, noindex, ogType, ogImage, ogImageAlt, schemaData]);
 
   return null; // SEO component does not render any visual UI elements
 }

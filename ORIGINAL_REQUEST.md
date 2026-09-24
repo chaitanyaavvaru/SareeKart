@@ -303,3 +303,156 @@ Integrity mode: development
 - [ ] System maintains `>= 30%` free disk space verified via `~/scripts/check_disk_health.sh`.
 - [ ] No WhatsApp production secrets committed to Git repository.
 - [ ] Audit and verification report authored in `docs/phase-13-stage-4-whatsapp-readiness-audit.md`.
+
+## 2026-09-18T15:41:53Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full multi-agent team
+
+Deploy SareeKart luxury handlooms publicly with a strict ₹0 budget, orchestrating a zero-cost architecture across TiDB Cloud Serverless (MySQL 8.0 wire-compatible), Vercel static hosting, and free-tier containerized Spring Boot 3 without purchasing AWS EC2, paid hosting, or paid databases.
+
+Working directory: /Users/chaitanyachaitu/Downloads/SareeKart-main
+Integrity mode: development
+
+---
+
+## Requirements
+
+### R1. Free-Tier Cloud Database Migration (TiDB Cloud Serverless)
+- Connect to the user's free TiDB Cloud Serverless cluster using TLS (`useSSL=true`, `allowPublicKeyRetrieval=true`).
+- Execute clean-room Flyway baseline migration:
+  Empty DB -> V1 baseline -> 20 base tables + catalog -> V17...V32 -> 37 tables + 368 columns.
+- Verify 100% schema parity across all 37 tables and 368 columns.
+- Ensure Flyway history records all 17 migrations (`V1`, `V17`–`V32`) with status `SUCCESS`.
+- Enforce Hibernate `ddl-auto=validate` during Spring Boot initialization against TiDB Cloud without any schema mutation errors.
+- Do NOT alter existing migrations `V17`–`V32`.
+
+### R2. Spring Boot Backend Deployment under 512 MB RAM Constraint
+- Package and deploy Spring Boot 3 (Java 17) using genuinely free application/container hosting (Render Web Service free tier / Koyeb).
+- Enforce strict memory optimization:
+  JAVA_TOOL_OPTIONS="-Xmx384m -Xms128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+- Configure environment variables securely via provider secret management:
+  - `SPRING_PROFILES_ACTIVE=prod`
+  - `SPRING_DATASOURCE_URL=jdbc:mysql://<tidb_host>:<tidb_port>/<tidb_db>?useSSL=true&allowPublicKeyRetrieval=true`
+  - `SPRING_JPA_HIBERNATE_DDL_AUTO=validate`
+  - `SPRING_FLYWAY_ENABLED=true`
+  - `NEO4J_ENABLED=false`
+  - `JWT_SECRET=<secure_64_char_secret>`
+  - `CORS_ALLOWED_ORIGINS=https://sareekart.com,https://*.vercel.app`
+- Verify Neo4j graceful degradation: With `NEO4J_ENABLED=false`, the built-in circuit breaker activates `fallbackHydrate()`, serving curated category and trending handlooms directly from MySQL without disrupting commerce or user experience.
+- Measure and document cold-start times (expected 40–50s on free container sleep).
+
+### R3. React/Vite Frontend Edge Static Hosting (Vercel)
+- Deploy the production React/Vite SPA bundle to Vercel's global Edge CDN for ₹0.
+- Verify production build satisfies the bundle budget: all chunk sizes strictly < 500 kB (max chunk: 229 kB).
+- Maintain client-side SPA routing via `frontend/vercel.json` rewrites:
+  { "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+- Point frontend `VITE_API_BASE_URL` to the public HTTPS backend URL.
+- Test SPA routing across `/products`, `/login`, `/cart`, `/wishlist`, and `/admin`.
+
+### R4. Security, HTTPS & Zero-Cost Isolation
+- Enforce end-to-end TLS/HTTPS across both frontend and backend.
+- Maintain private isolation: Ensure database and internal ports (4000, 3306, 7687, 8081) are not exposed publicly.
+- Zero plaintext credentials: No database passwords, JWT secrets, or tokens committed to Git or printed in reports.
+- Non-destructive commerce: No real payment transactions; preserve Razorpay in test mode (`rzp_test_...`) and support WhatsApp enquiry / manual order workflow.
+
+---
+
+## Acceptance Criteria
+
+### Automated Regression & Code Quality
+- [ ] Backend test suite passes cleanly: 575/575 tests PASS (`mvn test`).
+- [ ] Frontend linter passes with 0 errors (`npm run lint`).
+- [ ] Frontend production build succeeds with all chunks strictly < 500 kB.
+- [ ] Working tree clean, `.gitignore` strictly ignores `.env*` and `.env.tidb`.
+
+### Cloud Database & Migration Parity
+- [ ] TiDB TLS connection verified.
+- [ ] All 17 Flyway migrations (`V1` baseline -> `V17`..`V32`) applied with 0 errors.
+- [ ] 37/37 tables and 368/368 columns verified in TiDB Cloud.
+- [ ] Spring Boot boots with `spring.jpa.hibernate.ddl-auto=validate` with zero schema mismatch warnings.
+
+### 15-Point Safe Public Smoke Test Suite
+- [ ] Homepage: Luxury handloom branding, hero banner, category showcase load over HTTPS.
+- [ ] Product Catalog: Sarees render with images, prices, and fabric tags.
+- [ ] Product Detail: Specs, artisan stories, care instructions render.
+- [ ] Search: Multi-attribute search queries return matching handloom sarees.
+- [ ] Categories: Reference categories load correctly.
+- [ ] Customer Auth: Registration and login return valid JWTs.
+- [ ] Wishlist: Add/remove items persists across authenticated sessions.
+- [ ] Cart: Cart additions and price subtotals calculate accurately.
+- [ ] Checkout: Checkout initialization completes without error.
+- [ ] Admin Auth: Role-based access control enforces `ADMIN`/`OWNER` privileges.
+- [ ] Admin Dashboard: Analytics, catalog management, and orders dashboards load.
+- [ ] robots.txt: Search engine crawling directives served over HTTPS.
+- [ ] sitemap.xml: SEO sitemap served with valid URLs.
+- [ ] Backend Health & Readiness: `/actuator/health` returns `{"status":"UP"}`.
+- [ ] Neo4j Safe Fallback: Recommendations serve MySQL curated fallbacks without error.
+
+---
+
+## Execution Guardrails & Cost Compliance
+- Total Incurred Cost: Strictly ₹0.
+- No AWS EC2 / RDS / Paid VPS: Any step requiring credit card entry or payment must halt immediately as BLOCKED.
+- Domain Policy: Use temporary Vercel HTTPS subdomain (`*.vercel.app`) for initial smoke testing; provide exact DNS instructions for `sareekart.com` only after 100% test pass.
+- Stage Boundary: HALT immediately after Stage 2B-FREE report is compiled. Do NOT proceed to Stage 3.
+
+## 2026-09-18T15:48:24Z
+
+Continue Phase 0 discovery and proceed through the approved Stage 2B-FREE execution plan.
+
+Do not skip validation.
+Do not incur any cost.
+Do not expose credentials.
+Stop immediately on any blocker.
+
+Once all execution milestones are complete, return the exact
+PHASE 14 — STAGE 2B-FREE EXECUTION RESULT
+with PASS or BLOCKED and evidence for every required check.
+
+Do not proceed to Stage 3.
+
+## 2026-09-18T15:51:38Z
+
+Continue execution.
+
+Frontend Phase 0 survey is complete.
+Finish the remaining DB and backend discovery, synthesize PROJECT.md, then proceed through Milestone 1 and the remaining approved Phase 14 Stage 2B-FREE milestones.
+
+Maintain:
+- ₹0 maximum cost
+- zero credential exposure
+- no paid upgrades
+- no real payments
+- no production WhatsApp messages
+- no changes to frozen phases
+- no migration modifications
+- stop on any blocker
+
+Do not stop at survey completion.
+Continue through actual deployment and verification.
+
+Required final gate:
+PHASE 14 — STAGE 2B-FREE EXECUTION RESULT
+Status: PASS / BLOCKED
+
+Do not proceed to Stage 3.
+
+## 2026-09-19T09:10:06Z
+
+Server restart recovery. All 3 surveys (frontend, backend, database) in Phase 0 are complete with full reports and handoffs:
+- survey_frontend.md (229 kB chunk budget verified, SPA rewrites in place, 15 smoke tests mapped)
+- survey_backend.md (512 MB memory constraint, -Xmx384m -XX:+UseSerialGC, Neo4j fallback verified)
+- survey_db.md (17 Flyway migrations V1->V32, 37 tables / 368 columns parity verified)
+
+Resume execution immediately: synthesize findings into PROJECT.md, proceed through Milestone 1 and the remaining approved Phase 14 Stage 2B-FREE milestones.
+
+Enforce all guardrails:
+- Strict ₹0 cost
+- Zero credential leaks
+- ddl-auto=validate
+- Stop on any blocker
+- Provide final audited PHASE 14 — STAGE 2B-FREE EXECUTION RESULT. Do not proceed to Stage 3.

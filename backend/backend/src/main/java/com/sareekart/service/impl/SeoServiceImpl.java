@@ -124,6 +124,7 @@ public class SeoServiceImpl implements SeoService {
                 "Disallow: /track-order\n" +
                 "Disallow: /wishlist\n" +
                 "Disallow: /wallet\n" +
+                "Disallow: /invoices\n" +
                 "Disallow: /admin\n" +
                 "Disallow: /admin/\n" +
                 "Disallow: /trousseau\n" +

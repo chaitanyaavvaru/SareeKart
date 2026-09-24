@@ -37,6 +37,13 @@ public class RecommendationController {
     private final RecommendationService recommendationService;
     private final GraphService graphService;
 
+    @GetMapping({"", "/"})
+    @Operation(summary = "Default recommendations showcase (delegates to trending)")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getDefaultRecommendations(
+            @RequestParam(defaultValue = "8") int limit) {
+        return getTrendingSarees(limit);
+    }
+
     @GetMapping("/frequently-bought-together/{productId}")
     @Operation(summary = "Co-purchased sarees (Frequently bought together)")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getFrequentlyBoughtTogether(

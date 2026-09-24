@@ -140,7 +140,7 @@ export default function WhatsAppConsole() {
 
   return (
     <div className="space-y-8 animate-fade-in font-sans text-left pb-12">
-      <SEO title="WhatsApp Dispatch & Clienteling Console | SareeKart Admin" />
+      <SEO title="WhatsApp Dispatch & Clienteling Console | SareeKart Admin" noindex={true} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

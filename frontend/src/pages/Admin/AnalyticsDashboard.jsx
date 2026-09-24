@@ -474,6 +474,7 @@ export default function AnalyticsDashboard() {
       <SEO
         title="Sales & Business Analytics | SareeKart Admin"
         description="Comprehensive e-commerce analytics, sales telemetry, inventory velocity, customer retention cohorts, and accounting reports."
+        noindex={true}
       />
 
       {/* Top Header & Range Selection Toolbar */}

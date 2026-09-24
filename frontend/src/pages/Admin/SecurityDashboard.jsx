@@ -58,7 +58,7 @@ export default function SecurityDashboard() {
 
   return (
     <div className="text-left space-y-8 animate-fade-in font-sans text-[#111827]">
-      <SEO title="Enterprise Security & IAM Vault | SareeKart Admin" />
+      <SEO title="Enterprise Security & IAM Vault | SareeKart Admin" noindex={true} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

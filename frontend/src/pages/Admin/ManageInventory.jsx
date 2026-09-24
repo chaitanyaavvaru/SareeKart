@@ -315,7 +315,7 @@ export default function ManageInventory() {
 
   return (
     <div className="text-left space-y-8 animate-fade-in font-sans text-[#111827]">
-      <SEO title="Inventory & Warehouse Management | SareeKart Admin" />
+      <SEO title="Inventory & Warehouse Management | SareeKart Admin" noindex={true} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

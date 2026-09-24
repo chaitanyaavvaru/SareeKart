@@ -121,7 +121,7 @@ export default function ManageCoupons() {
 
   return (
     <div className="space-[#111827] text-left space-y-8 animate-fade-in font-sans">
-      <SEO title="Marketing & Coupon Management | SareeKart Admin" />
+      <SEO title="Marketing & Coupon Management | SareeKart Admin" noindex={true} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

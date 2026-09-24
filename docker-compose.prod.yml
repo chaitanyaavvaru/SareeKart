@@ -15,7 +15,7 @@ services:
     container_name: sareekart-prod-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: sareekart_db
       MYSQL_USER: ${SPRING_DATASOURCE_USERNAME}
       MYSQL_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
@@ -46,7 +46,7 @@ services:
       - sareekart-internal
     # Admin HTTP port 7474 is blocked; only internal Bolt connectivity is active
     healthcheck:
-      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_PASSWORD}\" 'RETURN 1;' || exit 1"]
+      test: ["CMD-SHELL", "NEO4J_PASS=$${NEO4J_AUTH#*/} && cypher-shell -u neo4j -p \"$$NEO4J_PASS\" 'RETURN 1;' || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5

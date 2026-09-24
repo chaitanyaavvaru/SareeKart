@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import ColdStartNotice from '../common/ColdStartNotice';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import CartDrawer from '../cart/CartDrawer';
@@ -29,6 +30,7 @@ export default function MainLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F7F4EE] text-[#17211F]">
+      <ColdStartNotice />
       <Navbar />
 
       <main className="flex-grow pb-16 md:pb-0">

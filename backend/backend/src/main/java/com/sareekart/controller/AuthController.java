@@ -28,6 +28,9 @@ public class AuthController {
     @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
+    @org.springframework.beans.factory.annotation.Value("${app.auth.expose-reset-token-in-response:false}")
+    private boolean exposeResetTokenInResponse;
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = userService.register(request);
@@ -53,7 +56,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Map<String, String>>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         String token = userService.requestPasswordReset(request.getEmail());
         Map<String, String> data = new HashMap<>();
-        if (token != null) {
+        if (token != null && exposeResetTokenInResponse) {
             data.put("resetToken", token);
             data.put("resetUrl", frontendUrl + "/reset-password?token=" + token);
         }

@@ -11,6 +11,30 @@ export const CANONICAL_DOMAIN = (
 export const DEFAULT_OG_IMAGE = `${CANONICAL_DOMAIN}/favicon.svg`;
 
 /**
+ * Determines whether a pathname belongs to a private customer, authentication,
+ * checkout, or administrative area that must strictly not be indexed by search crawlers.
+ *
+ * @param {string} pathname
+ * @returns {boolean}
+ */
+export function isAutoPrivatePath(pathname) {
+  if (!pathname) return false;
+  const p = pathname.toLowerCase();
+  return p.startsWith('/admin') ||
+         p.startsWith('/checkout') ||
+         p.startsWith('/cart') ||
+         p.startsWith('/orders') ||
+         p.startsWith('/account') ||
+         p.startsWith('/profile') ||
+         p.startsWith('/wallet') ||
+         p.startsWith('/invoices') ||
+         p.startsWith('/wishlist') ||
+         p === '/trousseau' || p.startsWith('/trousseau/') ||
+         p === '/login' || p === '/register' ||
+         p === '/forgot-password' || p === '/reset-password';
+}
+
+/**
  * Generates an absolute, canonical HTTPS URL with consistent trailing-slash policy
  * and whitelisted query parameters.
  *

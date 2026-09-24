@@ -28,6 +28,7 @@ Disallow: /orders/
 Disallow: /track-order
 Disallow: /wishlist
 Disallow: /wallet
+Disallow: /invoices
 Disallow: /admin
 Disallow: /admin/
 Disallow: /trousseau

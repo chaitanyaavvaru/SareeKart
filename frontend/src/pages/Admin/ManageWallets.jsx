@@ -145,7 +145,7 @@ export default function ManageWallets() {
 
   return (
     <div className="space-y-6">
-      <SEO title="Manage Wallets & Loyalty | SareeKart Admin" description="Staff console for patron wallets." />
+      <SEO title="Manage Wallets & Loyalty | SareeKart Admin" description="Staff console for patron wallets." noindex={true} />
 
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 border-b border-[#DDE4EA] pb-5 sm:flex-row sm:items-center">

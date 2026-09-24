@@ -123,6 +123,7 @@ export default function ApprovalCenter() {
       <SEO
         title="Approval Center & Maker-Checker Console | SareeKart Admin"
         description="Owner-controlled approval center for manual price edits, inventory adjustments, and Excel batch transactions."
+        noindex={true}
       />
 
       {/* Header */}

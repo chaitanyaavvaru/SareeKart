@@ -1,5 +1,8 @@
 # Env
 .env
+.env.*
+.env.tidb
+!.env*.example
 .backend.pid
 .frontend.pid
 
@@ -27,3 +30,7 @@ playwright-report/
 uploads/
 backend/backend/uploads/
 .agents/
+
+# Database Backups & Dumps
+backups/*.sql
+backups/*.sql.sha256

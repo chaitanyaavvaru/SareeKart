@@ -202,4 +202,42 @@ class Neo4jFailureIsolationTest {
         Map<String, Object> stats = nullDriverService.getGraphStatistics();
         assertEquals(false, stats.get("available"));
     }
+
+    @Test
+    @DisplayName("6. Neo4j Disabled Full Fallback: When NEO4J_ENABLED=false (driver is null), fallbackHydrate serves MySQL products")
+    void nullDriver_activatesFallbackHydrateFromMySQL() {
+        Neo4jGraphServiceImpl nullDriverGraphService = new Neo4jGraphServiceImpl(
+                null,
+                productRepository,
+                categoryRepository,
+                fabricRepository,
+                occasionRepository,
+                colorRepository,
+                orderRepository,
+                orderItemRepository,
+                customerEventRepository,
+                graphSyncFailureRepository
+        );
+
+        RecommendationServiceImpl recoServiceWithNullDriver = new RecommendationServiceImpl(
+                nullDriverGraphService,
+                productRepository,
+                productMapper
+        );
+
+        Category kanchipuramCat = Category.builder().id(20L).name("Kanchipuram Silk").build();
+        Product targetProduct = Product.builder().id(10L).name("Bridal Red Kanchipuram").category(kanchipuramCat).active(true).build();
+        Product fallbackSaree = Product.builder().id(11L).name("Royal Gold Zari Kanchipuram").category(kanchipuramCat).price(BigDecimal.valueOf(24999)).active(true).build();
+
+        when(productRepository.findById(10L)).thenReturn(Optional.of(targetProduct));
+        when(productRepository.findByCategoryIdAndActiveTrue(eq(20L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(fallbackSaree)));
+
+        List<ProductResponse> results = recoServiceWithNullDriver.getFrequentlyBoughtTogether(10L, 4);
+
+        assertNotNull(results);
+        assertFalse(results.isEmpty());
+        assertEquals(11L, results.get(0).getId());
+        assertEquals("Royal Gold Zari Kanchipuram", results.get(0).getName());
+    }
 }

@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { logout } from '../../redux/slices/authSlice';
 import SEO from '../../components/common/SEO';
+import ColdStartNotice from '../../components/common/ColdStartNotice';
 
 const ADMIN_NAV = [
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', group: 'Store' },
@@ -201,6 +202,7 @@ export default function AdminDashboard() {
             </div>
           </div>
         </header>
+        <ColdStartNotice />
 
         <div className="min-h-[calc(100dvh-97px)] bg-[#F7F4EE] p-4 sm:p-6 lg:p-8">
           <Outlet />

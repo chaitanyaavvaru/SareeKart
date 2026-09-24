@@ -35,6 +35,48 @@ class CorsConfigTest {
         assertThat(response.getHeader("Access-Control-Allow-Origin")).isNull();
     }
 
+    @Test
+    void allowsWildcardVercelSubdomainsWithCredentials() throws Exception {
+        CorsFilter filter = new CorsConfig("https://sareekart.com,https://*.vercel.app").corsFilter();
+        MockHttpServletRequest request = preflightRequest("https://sareekart-git-preview-123.vercel.app");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getHeader("Access-Control-Allow-Origin"))
+                .isEqualTo("https://sareekart-git-preview-123.vercel.app");
+        assertThat(response.getHeader("Access-Control-Allow-Credentials"))
+                .isEqualTo("true");
+    }
+
+    @Test
+    void allowsProductionCanonicalDomainWithCredentials() throws Exception {
+        CorsFilter filter = new CorsConfig("https://sareekart.com,https://*.vercel.app").corsFilter();
+        MockHttpServletRequest request = preflightRequest("https://sareekart.com");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getHeader("Access-Control-Allow-Origin"))
+                .isEqualTo("https://sareekart.com");
+        assertThat(response.getHeader("Access-Control-Allow-Credentials"))
+                .isEqualTo("true");
+    }
+
+    @Test
+    void rejectsMismatchedDomainWithWildcardPattern() throws Exception {
+        CorsFilter filter = new CorsConfig("https://sareekart.com,https://*.vercel.app").corsFilter();
+        MockHttpServletRequest request = preflightRequest("https://attacker-vercel.app.malicious.com");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(response.getHeader("Access-Control-Allow-Origin")).isNull();
+    }
+
     private MockHttpServletRequest preflightRequest(String origin) {
         MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/api/auth/register");
         request.addHeader("Origin", origin);

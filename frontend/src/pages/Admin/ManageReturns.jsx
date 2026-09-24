@@ -393,6 +393,7 @@ export default function ManageReturns() {
       <SEO
         title="Returns & Reverse Logistics Moderation | SareeKart Admin"
         description="Inspect customer defect photographs, approve return/exchange requests, schedule reverse courier pickups, and authorize refunds."
+        noindex={true}
       />
 
       {/* Header Banner */}
