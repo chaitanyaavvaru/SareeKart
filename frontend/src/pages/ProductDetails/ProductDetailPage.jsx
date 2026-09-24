@@ -794,6 +794,8 @@ export default function ProductDetailPage() {
             ['Fabric', product.fabric || 'Handloom blend'],
             ['Occasion', product.occasion || 'Festive and daily wear'],
             ['Color', product.color || 'Color varies by light'],
+            ['Dimensions', product.dimensions || '6.3m Total (5.5m Saree + 0.8m Blouse) · 46in Width'],
+            ['Zari Grade', product.zari || 'Fine Tested Metallic Zari'],
             ['Care', 'Dry clean recommended'],
             ['Blouse', blouseOption],
             ['Fit note', '6.2m saree with blouse fabric'],
