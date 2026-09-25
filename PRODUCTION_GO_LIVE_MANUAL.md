@@ -159,7 +159,7 @@ To deploy a new application version without interrupting active shopper checkout
 
 1. **Pull and Build New Images:**
    ```bash
-   git pull origin master
+   git pull origin main
    docker compose -f docker-compose.prod.yml build backend frontend
    ```
 2. **Execute Database Migrations:**
