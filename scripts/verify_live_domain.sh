@@ -20,16 +20,25 @@ echo "Expected CNAME:  ${VERCEL_CNAME}"
 echo "Probe Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 echo "------------------------------------------------------------------------"
 
-# 1. DNS Resolution Probe
-echo -n "1. Querying Apex DNS A Record (${DOMAIN})... "
+# 1. Authoritative Nameserver Probe
+echo -n "1. Querying Authoritative Nameservers (NS)... "
+NS_RECORDS=$(dig +short "${DOMAIN}" NS | tr '\n' ' ' || echo "NONE")
+echo "[RESOLVED: ${NS_RECORDS}]"
+if echo "${NS_RECORDS}" | grep -qi "afternic"; then
+    echo "   [ROOT CAUSE DETECTED] Domain is pointed to Afternic Parking Nameservers!"
+    echo "   Action: In GoDaddy/Registrar, switch Nameservers from Afternic to Default."
+fi
+
+# 2. DNS Resolution Probe
+echo -n "2. Querying Apex DNS A Record (${DOMAIN})... "
 APEX_IPS=$(dig +short "${DOMAIN}" A | tr '\n' ' ' || echo "NONE")
 echo "[RESOLVED: ${APEX_IPS}]"
 
-echo -n "2. Querying WWW DNS Record (${WWW_DOMAIN})... "
+echo -n "3. Querying WWW DNS Record (${WWW_DOMAIN})... "
 WWW_RECORDS=$(dig +short "${WWW_DOMAIN}" | tr '\n' ' ' || echo "NONE")
 echo "[RESOLVED: ${WWW_RECORDS}]"
 
-# 2. Check Match Against Vercel Edge Target
+# 3. Check Match Against Vercel Edge Target
 IS_CUTOVER=0
 if echo "${APEX_IPS}" | grep -q "${VERCEL_IP}"; then
     echo "[PASS] Apex record correctly points to Vercel IP (${VERCEL_IP})."
@@ -71,6 +80,9 @@ else
     echo "CUTOVER STATUS: [PENDING EXTERNAL REGISTRAR ACTION]"
     echo "Summary: Platform is 100% technically ready. Live traffic awaiting DNS A/CNAME updates at registrar."
     echo "Required Actions at Domain Registrar:"
+    if echo "${NS_RECORDS}" | grep -qi "afternic"; then
+        echo "  0. Switch Nameservers: Change from ns1.afternic.com to GoDaddy Default Nameservers"
+    fi
     echo "  1. Set A Record:     @    -> ${VERCEL_IP}"
     echo "  2. Set CNAME Record: www  -> ${VERCEL_CNAME}"
     exit 0
