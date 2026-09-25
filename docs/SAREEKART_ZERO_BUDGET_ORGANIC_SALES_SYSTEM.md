@@ -70,9 +70,9 @@ SKU #3 — VENKATAGIRI FINE COTTON JAMDANI SAREE
 ========================================================================
 Catalog ID:          3
 Price:               ₹8,667 (Catalog listed price; ₹0 shipping)
-Fabric Composition:  Combed 100s Fine Cotton
+Fabric Composition:  Fine Cotton Handloom
 Weave & Provenance:  Handcrafted in Venkatagiri, Andhra Pradesh. Lightweight
-                     fine-count cotton embellished with traditional Jamdani 
+                     fine cotton embellished with traditional Jamdani 
                      extra-weft floral motifs and delicate gold buttas.
 Saree Dimensions:    6.3m Total (5.5m Body Drape + 0.8m Running Blouse)
 Width:               46 inches (1.17 meters)
@@ -90,12 +90,12 @@ Availability Status: In Stock (8 units total; 1 unit reserved for Lead-002,
 3. Macro Fabric:     https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&fm=webp&w=1200&q=80
 ------------------------------------------------------------------------
 Common Customer Inquiries & Verified Answers:
-Q: "Is 100s count cotton sheer or see-through?"
-A: "Combed 100s count cotton is exceptionally fine and breathable, but the 
-   dense handloom weave in Midnight Black provides full body opacity when pleated."
+Q: "Is this fine cotton sheer or see-through?"
+A: "The fine cotton weave is lightweight and breathable, while the 
+   dense handloom weave in Midnight Black provides comfortable opacity when pleated."
 
 Q: "Is the fabric stiff like starch-treated showroom cotton?"
-A: "No, this is natural combed cotton with zero stiffeners. It drapes softly 
+A: "No, this is natural fine cotton with zero artificial stiffeners. It drapes softly 
    and becomes increasingly supple with subsequent wears."
 ========================================================================
 ```
@@ -188,8 +188,8 @@ SKU #8 — GADWAL ZARI BORDER COTTON-SILK SAREE
 ========================================================================
 Catalog ID:          8
 Price:               ₹13,200 (Catalog listed price; ₹0 shipping)
-Fabric Composition:  Cotton-Silk Blend (100s Fine Cotton Body + Pure Silk Border)
-Weave & Provenance:  Handcrafted in Gadwal, Telangana. Legendary Kuttu interlocking
+Fabric Composition:  Cotton-Silk Blend (Fine Cotton Body + Pure Silk Border)
+Weave & Provenance:  Handcrafted in Gadwal, Telangana. Traditional Kuttu interlocking
                      join connecting a light cotton body to heavy silk borders.
 Saree Dimensions:    6.3m Total (5.5m Body Drape + 0.8m Running Blouse)
 Width:               46 inches (1.17 meters)
@@ -207,7 +207,7 @@ Availability Status: In Stock (9 units available in verified inventory).
 ------------------------------------------------------------------------
 Common Customer Inquiries & Verified Answers:
 Q: "How are the cotton and silk joined without ripping?"
-A: "This uses the GI-tagged 'Kuttu' (interlocking weft) technique where master 
+A: "This uses the traditional 'Kuttu' (interlocking weft) technique where master 
    weavers manually link the cotton body threads directly to the silk border threads."
 
 Q: "Is this suitable for warm afternoon pujas?"
@@ -271,11 +271,11 @@ flowchart TD
 ---
 
 ### Segment E: Handloom Purist & Textile Connoisseur
-- **Customer Context**: Collector, designer, educator, or experienced saree wearer who understands counts, dyes, loom types, and GI tags. Can detect synthetic adulteration instantly.
+- **Customer Context**: Collector, designer, educator, or experienced saree wearer who understands counts, dyes, loom types, and weave structures. Can detect synthetic adulteration instantly.
 - **Recommended Hero**: SKU #4 (*Pochampally Double Ikat*, ₹24,111) or SKU #3 (*Venkatagiri Fine Cotton Jamdani*, ₹8,667).
 - **Core Message Hook**:
-  > *"Namaste! It is always a pleasure connecting with someone who truly appreciates handloom heritage. We focus strictly on genuine loom provenance—our Venkatagiri is combed 100s fine cotton with authentic extra-weft Jamdani, and our Pochampally is genuine double ikat. What specific weaves are currently in your personal collection?"*
-- **Key Trust Reassurances**: Full disclosure of fiber content (no polyester blends), true 46-inch loom width, exact technical explanation of the weave mechanics.
+  > *"Namaste! It is always a pleasure connecting with someone who truly appreciates handloom heritage. We focus strictly on genuine loom provenance—our Venkatagiri is fine cotton with authentic extra-weft Jamdani, and our Pochampally is genuine double ikat silk. What specific weaves are currently in your personal collection?"*
+- **Key Trust Reassurances**: Full disclosure of fiber content (no synthetic blends), true 46-inch loom width, exact technical explanation of the weave mechanics.
 
 ---
 
@@ -327,7 +327,7 @@ sequenceDiagram
 > *"Regarding the blouse piece: Every SareeKart drape includes a full 0.8m unstitched running blouse piece woven in matching silk/cotton with continuing borders. The total length is 6.3 meters, so you will have ample fabric for custom sleeve styling."*
 
 #### Stage 5: Selection & Order Confirmation Setup
-> *"Wonderful choice! The Venkatagiri Fine Cotton Jamdani (SKU #3) in Midnight Black is one of our most elegant pieces—breathable combed 100s cotton with golden Jamdani motifs.*
+> *"Wonderful choice! The Venkatagiri Fine Cotton Jamdani (SKU #3) in Midnight Black is one of our most elegant pieces—breathable fine cotton with golden Jamdani motifs.*
 > 
 > *Here is the order summary:*
 > *- Item: Venkatagiri Fine Cotton Jamdani Saree (SKU #3)*
@@ -356,7 +356,7 @@ Instagram and social content must educate and inspire without gimmicks, artifici
 
 ### Content Pillars (40% Product | 35% Education | 25% Story)
 1. **Product (40%)**: Tactile close-ups, zari reflection in sunlight, 360-degree drape flow, pleat formation.
-2. **Education (35%)**: Weave identification, fiber burn tests, Kadwa vs Jacquard, why 6.3m length matters, zari care.
+2. **Education (35%)**: Weave identification, handloom vs powerloom, Kadwa vs Jacquard, why 6.3m length matters, zari care.
 3. **Artisan & Saree Story (25%)**: History of Venkatagiri, geometry of Pochampally, behind-the-scenes packaging SOP.
 
 ```text
@@ -368,7 +368,7 @@ Week 1: Foundations of Authentic Handloom
 - Day 2:  [Education] The 6.3-Meter Standard: Why 5.5m commercial sarees fall short
 - Day 3:  [Story] Varanasi Weavers: The precision of Kadwa floral vines
 - Day 4:  [Product] SKU #3 Venkatagiri Cotton — Drape flow and featherlight weight
-- Day 5:  [Education] How to test for pure cotton vs synthetic polyester blend
+- Day 5:  [Education] Caring for handloom silk and fine cotton: Safe storage at home
 - Day 6:  [Product] SKU #4 Pochampally Double Ikat — Diamond geometry close-up
 - Day 7:  [Story] Behind the scenes: SareeKart's 11-point light table inspection
 
@@ -382,7 +382,7 @@ Week 2: Ocassion Styling & Tactile Craft
 - Day 14: [Story] Customer question of the week: "How do I care for handloom cotton?"
 
 Week 3: The Textile Connoisseur Series
-- Day 15: [Education] Single Ikat vs Double Ikat: Why Pochampally requires 6 months
+- Day 15: [Education] Single Ikat vs Double Ikat: Warp & weft resist-dye mechanics
 - Day 16: [Product] SKU #4 Emerald Green Ikat — Full length drape on mannequin
 - Day 17: [Story] The heritage of Venkatagiri: From royal court patronage to modern drapes
 - Day 18: [Product] SKU #3 Midnight Black Jamdani — 3 blouse pairing combinations
@@ -394,8 +394,8 @@ Week 4: The Milestone & Gifting Guide
 - Day 22: [Education] Gifting a handloom: How to pick the right weave by age & climate
 - Day 23: [Product] SKU #6 Organic Linen — Tactile texture audio reel (ASMR fabric feel)
 - Day 24: [Story] The artisans behind the shuttle: Handloom weaving as cultural heritage
-- Day 25: [Product] SKU #1 Banarasi Kadwa — Reverse side inspection (zero loose threads)
-- Day 26: [Education] Understanding warp & weft counts: What does "100s count" mean?
+- Day 25: [Product] SKU #1 Banarasi Kadwa — Reverse side inspection (clean locked motifs)
+- Day 26: [Education] Understanding Weave Density & Drape Fall in Handloom Cotton
 - Day 27: [Product] SKU #4 Pochampally Ikat — Contrast blouse styling ideas
 - Day 28: [Story] A buyer's checklist: 5 things to inspect before paying for handloom
 - Day 29: [Education] Ironing luxury drapes: Temperature, damp pressing, and border care
@@ -411,14 +411,14 @@ Week 4: The Milestone & Gifting Guide
 - **Slide 1 (Cover)**: High-res split photograph showing front vs back of handloom Kadwa.  
   *Text Overlay*: "Look at the back of your Banarasi saree. Here is how to tell if it's handwoven."
 - **Slide 2**: Close-up of reverse side of SareeKart SKU #1 showing clean, locked threads.  
-  *Text Overlay*: "Authentic Kadwa Weave: Each motif is individually locked by hand. Zero floating threads."
+  *Text Overlay*: "Authentic Kadwa Weave: Each motif is individually locked into the warp."
 - **Slide 3**: Diagram showing mass-market powerloom reverse with messy, loose float threads that snag jewelry.
 - **Slide 4**: Full drape shot of SKU #1 in Ruby Red.  
   *Text Overlay*: "Why it matters: Comfort against sensitive skin, zero snags, and longevity that spans decades."
 - **Caption Template**:
   > *A true Banarasi masterpiece does not hide its secrets—it reveals them on the reverse side.*  
   >  
-  > *In traditional Kadwa weaving from Varanasi, our master artisans weave each floral motif individually using an extra shuttle. When the motif is complete, the thread is hand-locked into the warp. There are no loose, floating threads on the reverse side to catch on your bangles or irritate your skin.*  
+  > *In traditional Kadwa weaving from Varanasi, each floral motif is woven individually using dedicated shuttles. When the motif is complete, the thread is hand-locked into the warp. There are no loose, continuous floating threads on the reverse side to catch on your bangles or irritate your skin.*  
   >  
   > *Featured: Royal Banarasi Zardozi Brocade Silk Saree (SKU #1)*  
   > *• Fabric: Pure Mulberry Silk*  
@@ -435,13 +435,13 @@ Week 4: The Milestone & Gifting Guide
 ### Template 2: Single Image Product Showcase (Venkatagiri Jamdani)
 - **Visual**: Daylight flat-lay photograph of SKU #3 on clean raw linen backdrop with sunlight catching the golden buttas.
 - **Caption Template**:
-  > *Featherlight combed cotton, midnight black elegance, and traditional Jamdani motifs.*  
+  > *Featherlight fine cotton, midnight black elegance, and traditional Jamdani motifs.*  
   >  
-  > *Woven in Venkatagiri, Andhra Pradesh, this drape proves that luxury does not need to feel heavy. Crafted with combed 100s fine cotton yarns, it offers natural breathability for humid mornings, while the golden metallic buttas give it unmistakable festive presence.*  
+  > *Woven in Venkatagiri, Andhra Pradesh, this drape proves that luxury does not need to feel heavy. Crafted with lightweight fine cotton yarns, it offers natural breathability for humid mornings, while the golden metallic buttas give it unmistakable festive presence.*  
   >  
   > *Product Specifications:*  
   > *• Name: Venkatagiri Fine Cotton Jamdani Saree (SKU #3)*  
-  > *• Body: Midnight Black 100s count cotton*  
+  > *• Body: Midnight Black fine cotton*  
   > *• Border & Pallu: Fine tested metallic zari Jamdani motifs*  
   > *• Length: Full 6.3m (5.5m body + 0.8m running blouse)*  
   > *• Price: ₹8,667 (Direct artisan price, free domestic shipping)*  
@@ -476,34 +476,34 @@ Every objection is an invitation for factual clarity. Respond with verified fact
 ---
 
 ### Objection 1: "Is this price negotiable? Can you offer a 20% discount?"
-> *"I completely understand why you ask! At SareeKart, we operate on a transparent, fair-pricing direct model. Our prices directly reflect master weaver compensation, 100% authentic pure fibers (like pure mulberry silk and combed 100s cotton), and verified 6.3m lengths.*
+> *"I completely understand why you ask! At SareeKart, we operate on a transparent, fair-pricing direct model. Our prices directly reflect master weaver compensation, 100% authentic pure fibers (like pure mulberry silk and fine cotton), and verified 6.3m lengths.
 > 
-> *Because we do not artificially inflate our prices to offer fake flash discounts, our listed price of ₹[Price] is our true and final price. We include complimentary insured domestic shipping and an 11-point quality inspection on every order."*
+> Because we do not artificially inflate our prices to offer fake flash discounts, our listed price of ₹[Price] is our true and final price. We include complimentary insured domestic shipping and an 11-point quality inspection on every order."*
 
 ---
 
 ### Objection 2: "How do I know this is real silk and not synthetic polyester?"
-> *"That is the most important question any handloom buyer should ask. SareeKart guarantees genuine fiber integrity:*
+> *"That is the most important question any handloom buyer should ask. SareeKart guarantees genuine fiber integrity:
 > 
-> *1. Every silk drape is crafted from pure natural mulberry silk, verifiable through an organic burn test (pure silk burns with the natural scent of hair and leaves fine crushable ash, whereas polyester melts into hard plastic beads).*  
-> *2. Our weaves feature traditional Geographical Indication (GI) provenance (such as Varanasi Kadwa and Pochampally double ikat).*  
-> *3. Most importantly, we back every purchase with our 7-day doorstep inspection guarantee: if you inspect the drape and find any defect or synthetic blend, you can initiate a return directly."*
+> 1. Every silk drape is crafted from pure natural mulberry silk, woven with verified warp and weft density and natural fiber weight.  
+> 2. Our weaves feature traditional regional craft heritage (such as Varanasi Kadwa and Pochampally double ikat).  
+> 3. Most importantly, we back every purchase with our verified 7-day doorstep inspection policy: if you inspect the drape upon unboxing and are not completely satisfied, you can initiate a return or exchange directly."*
 
 ---
 
 ### Objection 3: "The color looks slightly different on my phone screen. What if I don't like it in person?"
-> *"Phone screens naturally vary depending on brightness and color temperature. To eliminate any uncertainty:*
+> *"Phone screens naturally vary depending on brightness and color temperature. To eliminate any uncertainty:
 > 
-> *1. All our primary photographs are shot under neutral 5500K daylight without heavy saturation filters.*  
-> *2. I would be happy to record a quick, raw 15-second video clip of the drape in natural morning sunlight right now and share it directly with you here on WhatsApp.*  
-> *3. If upon unboxing at home the shade does not complement your event, you are fully protected by our 7-day exchange and return policy."*
+> 1. All our primary photographs are shot under neutral 5500K daylight without heavy saturation filters.  
+> 2. I would be happy to record a quick, raw 15-second video clip of the drape in natural morning sunlight right now and share it directly with you here on WhatsApp.  
+> 3. If upon unboxing at home the shade does not complement your event, you are fully protected by our 7-day exchange and return policy."*
 
 ---
 
 ### Objection 4: "Why should I pay ₹8,667 for a cotton saree when market sarees cost ₹2,000?"
-> *"Market commercial sarees at ₹2,000 are typically woven on high-speed powerlooms using 40s or 60s coarse yarn blended with polyester to cut costs, and often measure only 5.2 to 5.5 meters.*
+> *"Market commercial sarees at ₹2,000 are typically woven on high-speed powerlooms using coarse yarn blended with synthetics to cut costs, and often measure only 5.2 to 5.5 meters.
 > 
-> *Our Venkatagiri drape uses combed 100s fine cotton—meaning the cotton fibers are combed to remove short fibers, resulting in an exceptionally smooth, breathable yarn. It is woven on a traditional pit loom with authentic hand-woven Jamdani floral buttis and measures a generous 6.3 meters with running blouse. You are investing in true artisan craftsmanship that breathes effortlessly for years."*
+> Our Venkatagiri drape is woven with lightweight fine cotton yarns and embellished with hand-woven golden buttas and an authentic Jamdani pallu. It measures a generous 6.3 meters with running blouse piece, providing full, elegant drape fall. You are investing in true artisan craftsmanship that breathes effortlessly for years."*
 
 ---
 

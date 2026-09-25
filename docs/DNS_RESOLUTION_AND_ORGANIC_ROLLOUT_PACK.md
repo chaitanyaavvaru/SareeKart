@@ -42,10 +42,13 @@ Once default DNS management is active, configure these two DNS records in the DN
 
 | Type | Name / Host | Target / Value | TTL | Purpose |
 |---|---|---|---|---|
-| **A** | `@` | `76.76.21.21` | `1/2 Hour` (or `600s`) | Routes apex `sareekart.com` to Vercel global edge |
+| **A** | `@` | `<Vercel Apex IP>` (Check Vercel Dashboard) | `1/2 Hour` (or `600s`) | Routes apex `sareekart.com` to Vercel global edge |
 | **CNAME** | `www` | `cname.vercel-dns.com` | `1/2 Hour` (or `600s`) | Routes `www.sareekart.com` to Vercel edge |
 
-*(Remove any leftover parked `A` records pointing to `76.223.54.146` or `13.248.169.48`)*.
+> [!IMPORTANT]
+> **Dynamic Vercel IP Verification**: Do not blindly copy `76.76.21.21` without verification. Check the active IP address assigned in your Vercel Project Dashboard (`Project Settings` $\to$ `Domains`) at the exact moment of cutover, as Vercel occasionally assigns alternate Anycast edge endpoints. Configure whatever active IP Vercel specifies.
+> 
+> *(Remove any leftover parked `A` records pointing to `76.223.54.146` or `13.248.169.48`)*.
 
 ### Step 3: Run the Verification Probe
 Once saved, verify from the terminal:
@@ -69,20 +72,18 @@ While Gate 1 cutover is underway, publish **Day 1 of the 30-Day Organic Content 
 ### Ready-to-Copy Instagram Caption:
 
 ```text
-Look at the reverse side of your Banarasi saree. That is where its true story is told.
+Look at the reverse side of a fine Banarasi drape. That is where its weave story is revealed.
 
-In mass-market powerloom drapes, you will often find loose, floating threads on the reverse that catch on your jewellery and feel scratchy against your skin.
-
-In authentic handloom Kadwa weaving from Varanasi, each floral motif is individually woven by hand using a separate shuttle. When the artisan completes the motif, the thread is hand-locked into the warp. Zero floating threads. Pure comfort against your skin.
+In authentic Varanasi Kadwa weaving, each floral vine motif is individually hand-woven into the mulberry silk warp using dedicated shuttles. The zari motifs are woven directly into the fabric rather than running continuous loose floats across the back, ensuring a smooth, graceful drape.
 
 Featured: Royal Banarasi Zardozi Brocade (SKU #1)
 • Fabric: Pure Mulberry Silk
 • Weave: Traditional Kadwa Floral Vines
-• Color: Deep Ruby Red with Tested Gold Zari
+• Color: Ruby Red with Tested Gold Zari
 • Dimensions: Full 6.3m (includes 0.8m running blouse piece)
 • Price: ₹18,999 (Complimentary insured domestic shipping)
 
-Curious how this drape reflects natural daylight? Send us a message on WhatsApp (+91 9059564499) for a 1-to-1 video walkthrough with our draping stylist.
+Curious how this drape reflects natural daylight? Send us a message on WhatsApp (+91 9059564499) for a 1-to-1 video walkthrough with our studio team.
 
 #SareeKart #BanarasiSilk #KadwaWeave #HandloomSaree #PureSilkSaree #IndianTextiles #VaranasiWeaves #HandwovenIndia #SustainableFashion
 ```
@@ -116,53 +117,50 @@ Please take all the time you need to discuss together. Whenever you are ready or
 
 ## 5. Week 1 Days 3, 4, and 5 Organic Publishing Packs
 
-### Day 3: [Story] The Varanasi Looms — The Patience of Kadwa Floral Vines
+### Day 3: [Story] The Varanasi Looms — The Art of the Kadwa Floral Vine
 - **Format**: Behind-the-scenes storytelling post / reel script
 - **Featured Drape**: SKU #1 (*Royal Banarasi Zardozi Brocade*, Ruby Red | ₹18,999)
 - **Visual Asset**: Artisan at loom / macro shuttle movement ([Asset Link](https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?auto=format&fit=crop&fm=webp&w=1200&q=80))
 - **Ready-to-Copy Caption**:
 ```text
-28 days. Two master weavers. One shared pit loom.
+The beauty of traditional Varanasi weaving lies in the deliberate pace of the handloom.
 
-When you look at the Kadwa floral vines on this Ruby Red Banarasi drape, each petal is not stamped, printed, or run on a high-speed computerized machine. 
+When you look at the Kadwa floral vines on this Ruby Red Banarasi drape, each petal is individually hand-intertwined using pure mulberry silk and gold zari thread. 
 
-In traditional Varanasi Kadwa weaving, the artisan uses an independent wooden spool (tilli) for every individual flower motif. Thread by thread, the zari is intertwined into the mulberry silk warp and manually locked into place before the loom advances.
+In traditional Kadwa weaving, the artisan uses an independent wooden spool for each floral motif. Rather than printing or stamping patterns onto finished cloth, the design is born directly on the loom as warp and weft meet.
 
-Why do our weaving families still choose this painstaking method?
-Because machine-made jacquard leaves thousands of loose floating threads on the reverse side. Kadwa leaves zero. The back is as smooth and dignified as the front.
-
-When you wear a SareeKart Kadwa drape, you are wearing four continuous weeks of artisan devotion.
+Because each motif is individually woven into the warp, the reverse side remains remarkably neat and flat, feeling gentle against your skin throughout long festive celebrations.
 
 Featured: Royal Banarasi Zardozi Brocade (SKU #1 — ₹18,999)
 • 6.3m Total Length (includes 0.8m running blouse piece)
 • Pure Mulberry Silk with Tested Gold Zari
 • Zero shipping charge across India
 
-Inquire directly on WhatsApp (+91 9059564499) for daylight videos and weaving provenance details.
+Inquire directly on WhatsApp (+91 9059564499) for daylight video clips and drape walkthroughs.
 
 #SareeKart #VaranasiWeavers #KadwaSaree #HandloomHeritage #IndianHandicrafts #ArtisanCraft #BanarasiSilk
 ```
 
 ---
 
-### Day 4: [Product] Venkatagiri Fine Cotton Jamdani — Luxury That Breathes
+### Day 4: [Product] Venkatagiri Fine Cotton Jamdani — Lightweight Festive Comfort
 - **Format**: Single image daylight showcase & drape flow clip
 - **Featured Drape**: SKU #3 (*Venkatagiri Fine Cotton Jamdani*, Midnight Black | ₹8,667)
 - **Visual Asset**: Saree flowing in morning breeze on clean wooden floor ([Asset Link](https://kankatala.com/cdn/shop/files/1216719148_5.webp?v=1786345549&width=1070))
 - **Ready-to-Copy Caption**:
 ```text
-Who decided that festive sarees must feel heavy, stifling, and synthetic?
+Festive sarees do not have to feel heavy or stiff.
 
-Woven in the historic weaving town of Venkatagiri, Andhra Pradesh, this Midnight Black handloom drape is spun with combed 100s fine cotton yarn. It is lighter than air, completely breathable for humid afternoon rituals, and stays crisp from morning pooja to evening dinner.
+Woven in the historic handloom cluster of Venkatagiri, Andhra Pradesh, this Midnight Black drape is crafted from lightweight fine cotton. It is naturally breathable for afternoon ceremonies and retains its crisp drape from morning rituals to evening dinner.
 
-Embellished with delicate golden zari buttas and an authentic extra-weft Jamdani pallu, it gives you unmistakable royal presence without the weight of heavy brocade.
+Embellished with delicate hand-woven gold buttas and a traditional Jamdani pallu, it delivers royal presence with effortless ease of wear.
 
 Product Details:
 • SKU #3 — Venkatagiri Fine Cotton Jamdani Saree
-• Fabric: Combed 100s Fine Cotton (Pure natural fibers)
-• Color: Midnight Black with Fine Tested Metallic Zari
-• Dimensions: Full 6.3m length (5.5m body + 0.8m blouse piece)
-• Price: ₹8,667 (Direct artisan price, free domestic shipping)
+• Fabric: Fine Cotton Handloom
+• Color: Midnight Black with Fine Gold Buttas & Jamdani Pallu
+• Dimensions: Full 6.3m length (includes 0.8m running blouse piece)
+• Price: ₹8,667 (Direct fair-trade artisan price, free domestic shipping)
 
 Message us on WhatsApp (+91 9059564499) to view high-resolution daylight draping clips.
 
@@ -171,81 +169,78 @@ Message us on WhatsApp (+91 9059564499) to view high-resolution daylight draping
 
 ---
 
-### Day 5: [Education] The 3 Simple Home Tests for Pure Handloom Fabric
+### Day 5: [Education] How to Care for Luxury Handloom Drapes at Home
 - **Format**: 3-Slide Infographic / Educational Carousel
-- **Educational Topic**: How buyers can independently verify pure silk and combed cotton from synthetic adulteration.
+- **Educational Topic**: Simple, verified practices to preserve pure silk, fine cotton, and zari luster for generations.
 - **Ready-to-Copy Caption**:
 ```text
-Before you invest in a luxury saree, here are 3 reliable, scientifically proven ways to test if your fabric is genuine natural fiber or a synthetic polyester blend:
+Handloom sarees are living heirlooms. With proper care, their colors stay vibrant and their zari luster remains pristine for decades:
 
-1. The Organic Burn Test (For unstitched fringe threads):
-• Pure Silk: Burns slowly with the natural scent of burning hair/feathers. Leaves a dark, crushable ash that crumbles completely between your fingers.
-• Synthetic Polyester: Melts quickly, smells like sweet burning plastic, and leaves a hard, uncrushable plastic bead that cannot be powdered.
+1. Breathable Storage:
+Store pure silk and fine cotton sarees in breathable unbleached cotton or muslin bags. Avoid plastic zippered covers, which can trap ambient moisture and cause zari oxidation over time.
 
-2. The Friction & Static Test:
-• Natural Fibers: Pure cotton and mulberry silk do not generate static cling. They drape with natural weight and breathe effortlessly.
-• Synthetics: Rubbing two layers together creates static crackle and clings to your legs.
+2. Periodic Refolding:
+Every 3 to 4 months, take your sarees out, air them in a shaded, well-ventilated room for an hour, and refold along new creases. This prevents permanent strain on the silk threads along fold lines.
 
-3. The Reverse-Side Weave Audit:
-• True Handloom: Exhibits subtle, organic variations in warp tension and clean thread locks.
-• Mass-Market Powerloom: Perfect, mechanical grid repetition with loose floating threads across the back.
+3. Protecting the Zari:
+Always fold the saree with the embroidered zari pallu facing inwards. This shields delicate metallic threads from rubbing against harsh surfaces or jewellery during storage.
 
-Every SareeKart drape is backed by our 7-day doorstep inspection guarantee—inspect your saree in your own home with complete peace of mind.
+Every SareeKart drape arrives inside a protective moisture-barrier sleeve and includes our verified 7-day post-delivery inspection policy.
 
-Questions about testing handloom fibers? Drop a comment below or chat with our textile team on WhatsApp (+91 9059564499).
+Have questions about caring for a specific weave? Chat with our textile stylists on WhatsApp (+91 9059564499).
 
-#SareeKart #TextileEducation #HandloomPurity #PureSilkTest #FabricCare #SmartShopper #HandloomAuthenticity
+#SareeKart #TextileEducation #HandloomCare #SareeMaintenance #PureSilkCare #HandloomPreservation #SareeCareTips
 ```
 
 ---
 
-### Day 6: [Product] Pochampally Double Ikat — Flawless Geometric Symmetry
+### Day 6: [Product] Pochampally Double Ikat — Geometric Precision in Silk
 - **Format**: High-resolution macro detail reel / single-image focus
 - **Featured Drape**: SKU #4 (*Pochampally Double Ikat Silk*, Emerald Green | ₹24,111)
 - **Visual Asset**: Macro photograph of the tie-dyed warp and weft diamond junctions ([Asset Link](https://kankatala.com/cdn/shop/files/1216730670_1.webp?v=1786097422&width=1070))
 - **Ready-to-Copy Caption**:
 ```text
-Look closely at these Emerald Green diamond motifs. In single ikat, either the warp or the weft is dyed. 
+Look closely at these Emerald Green diamond motifs.
 
-In authentic Pochampally Double Ikat, both the vertical warp threads and the horizontal weft threads are individually mapped, counted, tied, and resist-dyed before they ever touch the loom.
+In traditional Pochampally Double Ikat, both the vertical warp threads and the horizontal weft threads are individually mapped, tied, and resist-dyed before they are mounted on the loom.
 
-When the weaver operates the shuttle, the dyed warp and weft must meet at exact millimetre coordinates. If a single thread shifts by even a fraction of a millimetre, the crisp geometric diamond blurs.
+As the artisan operates the shuttle, the dyed warp and weft threads align at exact intersections to form crisp geometric structures across the pure mulberry silk drape.
 
-Woven in Pochampally / Bhoodan, Telangana, this heirloom drape represents pure mathematical precision married with ancestral Indian craft:
+Product Details:
 • SKU #4 — Pochampally Double Ikat Silk Saree
-• Fabric: 100% Pure Mulberry Silk
+• Fabric: Pure Silk Handloom
 • Color: Regal Emerald Green with Woven Framing Borders
 • Dimensions: Full 6.3m (includes 0.8m running blouse piece)
-• Price: ₹24,111 (Direct fair-trade artisan price)
+• Price: ₹24,111 (Direct fair-trade artisan price, free domestic shipping)
 
 Inquire on WhatsApp (+91 9059564499) for a 1-to-1 video drape walkthrough.
 
-#SareeKart #PochampallySilk #DoubleIkat #TeliaRumal #GeometricSaree #PureSilkSaree #IndianTextiles #HandloomCollector
+#SareeKart #PochampallySilk #DoubleIkat #GeometricSaree #PureSilkSaree #IndianTextiles #HandloomHeritage
 ```
 
 ---
 
 ### Day 7: [Story] The 11-Point Light Table QC — How We Protect Your Unboxing
 - **Format**: Behind-the-scenes packaging & quality assurance carousel
-- **Theme**: SareeKart's zero-compromise pre-dispatch inspection protocol
+- **Theme**: SareeKart's verified pre-dispatch inspection protocol
 - **Visual Asset**: Flat-lay inspection table with tape measure, pallu detail, and moisture-barrier wrap ([Asset Link](https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&fm=webp&w=1200&q=80))
 - **Ready-to-Copy Caption**:
 ```text
-Before any SareeKart drape leaves our studio for your doorstep, it must pass an uncompromising 11-point inspection under calibrated daylight lighting:
+Before any SareeKart drape leaves our studio for your doorstep, it undergoes our verified 11-point inspection:
 
-1. Exact Tape Measure Audit: Full 6.3 meters confirmed (5.5m body drape + 0.8m unstitched running blouse, 46-inch width).
-2. Warp & Weft Integrity: Flat light-table review ensuring zero reed marks, loose thread runs, or skipped picks.
-3. Zari Shimmer & Finish: Metallic zari borders examined for consistent luster and zero electroplate tarnish.
-4. Cleanliness & Hygiene: 360-degree review ensuring pristine selvages with zero handling soilage.
-5. Moisture-Barrier Seal: Wrapped inside virgin moisture-barrier poly sleeves and heavy-duty corrugated cartons with tamper-evident H-tape sealing.
+1. Tape Measure Confirmation: Full 6.3 meters confirmed (5.5m body drape + 0.8m unstitched running blouse, 46-inch width).
+2. Warp & Weft Inspection: Flat light-table review ensuring weave continuity and zero reed defects.
+3. Zari Finish: Metallic zari borders examined for consistent luster and finish.
+4. Selvage Cleanliness: 360-degree review ensuring pristine selvages with zero handling soilage.
+5. Protective Packaging: Sealed in moisture-barrier sleeves and heavy-duty cartons with tamper-evident sealing.
 
-We do not believe in mass-market shortcuts. Every handloom saree is a cultural heirloom—and we inspect it as one.
+We treat every handloom saree as an heirloom—and we inspect it accordingly.
 
 All purchases are backed by our verified 7-day post-delivery inspection policy.
 
-Chat directly with our team on WhatsApp (+91 9059564499) to find the perfect drape for your upcoming celebration.
+Chat directly with our team on WhatsApp (+91 9059564499) to find the perfect drape for your celebration.
 
-#SareeKart #QualityAssurance #HandloomCare #BehindTheScenes #UnboxingExperience #LuxuryPackaging #HandwovenWithLove
+#SareeKart #QualityAssurance #HandloomCare #BehindTheScenes #UnboxingExperience #LuxuryPackaging #HandwovenIndia
 ```
 
 ---
@@ -267,13 +262,13 @@ Chat directly with our team on WhatsApp (+91 9059564499) to find the perfect dra
 - **Status**: `PRODUCT_SHARED` (SKU #6, ₹9,800)
 - **Context**: Inquiring about daily office desk wear and whether organic linen creases uncomfortably.
 - **Advisory Touchpoint Script**:
-  > *"Namaste [Name]! Regarding your question about daily office wear: unlike stiff starch-treated cottons, our handspun Bhagalpur organic linen in Natural Ivory is pre-washed and exceptionally supple. When sitting at a desk, it forms gentle, relaxed ripples rather than sharp creases, and breathes comfortably in warm weather. The 0.8m running blouse piece can be tailored or paired with a simple raw silk black blouse for an effortless executive look!"*
+  > *"Namaste [Name]! Regarding your question about daily office wear: unlike stiff heavily starched fabrics, our handspun Bhagalpur organic linen in Natural Ivory is naturally soft and breathable. When sitting at a desk, it forms relaxed ripples rather than sharp creases, keeping you comfortable throughout the day. The 0.8m running blouse piece can be tailored or paired with a contrasting blouse for an effortless executive look!"*
 
 ### Lead-004 (Delhi — Corporate Gifting Committee)
 - **Status**: `QUALIFIED` (SKU #8, ₹13,200)
 - **Context**: Awaiting committee budget sign-off for corporate gifting to Pune destination.
 - **Advisory Touchpoint Script**:
-  > *"Namaste [Name]! Just touching base regarding your committee's corporate gifting selection. Our Gadwal Cotton-Silk in Mustard Gold (SKU #8) remains one of our most distinguished gifts because it offers universal 6.3m sizing, official GST-compliant tax invoicing, and heavy ceremonial zari borders without the weight of full silk. Let me know if your finance team needs a formal proforma invoice or specimen spec sheet! 🙏"*
+  > *"Namaste [Name]! Just touching base regarding your committee's corporate gifting selection. Our Gadwal Cotton-Silk in Mustard Gold (SKU #8) remains one of our most distinguished gifts because it offers universal 6.3m sizing, official GST-compliant tax invoicing, and a lightweight cotton body joined with an authentic silk Kuttu zari border. Let me know if your finance team needs a formal proforma invoice or specimen spec sheet! 🙏"*
 
 ### Lead-005 (Mumbai — Hand-Embroidered Organza Drape Comparison)
 - **Status**: `FOLLOW_UP_SENT` (SKU #5, ₹14,500)
@@ -289,7 +284,7 @@ Chat directly with our team on WhatsApp (+91 9059564499) to find the perfect dra
 - **Status**: `PRODUCT_SHARED` (SKU #3 vs SKU #11, ₹8,667 vs ₹11,800)
 - **Context**: Choosing between lightweight breathable cotton and celebratory tissue shimmer.
 - **Advisory Touchpoint Script**:
-  > *"Namaste [Name]! To help with your choice between the Venkatagiri Cotton (SKU #3) and the Chanderi Tissue (SKU #11): If your family function is during warm morning hours where you will be moving around a lot, the combed 100s Venkatagiri gives you all-day breathable comfort. If it is an evening reception under chandeliers, the Champagne Silver Chanderi tissue catches artificial lighting with stunning luminescence. Which time of day is the main function?"*
+  > *"Namaste [Name]! To help with your choice between the Venkatagiri Cotton (SKU #3) and the Chanderi Tissue (SKU #11): If your family function is during warm morning hours where you will be moving around a lot, the lightweight Venkatagiri fine cotton gives you all-day breathable comfort. If it is an evening reception under chandeliers, the Champagne Silver Chanderi tissue catches artificial lighting with stunning luminescence. Which time of day is the main function?"*
 
 ---
 
@@ -297,6 +292,6 @@ Chat directly with our team on WhatsApp (+91 9059564499) to find the perfect dra
 
 - **Zero Engineering Churn**: Local and remote git branches remain locked on `main`.
 - **Zero Paid Spend**: All operations rely on organic social posting, WhatsApp, and manual relationship management.
-- **Strict Factual Accuracy**: Every specification (6.3m length, combed 100s cotton, pure mulberry silk, unstitched blouse piece) matches verified catalog truth.
+- **Strict Factual Accuracy**: Every specification (6.3m length, fine cotton, pure mulberry silk, unstitched blouse piece) matches verified catalog truth.
 
 *(Document active. Standing by for registrar DNS update or customer payment receipt.)*
