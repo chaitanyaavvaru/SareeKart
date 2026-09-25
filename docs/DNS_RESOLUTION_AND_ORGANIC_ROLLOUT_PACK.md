@@ -114,7 +114,108 @@ Please take all the time you need to discuss together. Whenever you are ready or
 
 ---
 
-## 5. Summary of System Safeguards
+## 5. Week 1 Days 3, 4, and 5 Organic Publishing Packs
+
+### Day 3: [Story] The Varanasi Looms — The Patience of Kadwa Floral Vines
+- **Format**: Behind-the-scenes storytelling post / reel script
+- **Featured Drape**: SKU #1 (*Royal Banarasi Zardozi Brocade*, Ruby Red | ₹18,999)
+- **Visual Asset**: Artisan at loom / macro shuttle movement ([Asset Link](https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?auto=format&fit=crop&fm=webp&w=1200&q=80))
+- **Ready-to-Copy Caption**:
+```text
+28 days. Two master weavers. One shared pit loom.
+
+When you look at the Kadwa floral vines on this Ruby Red Banarasi drape, each petal is not stamped, printed, or run on a high-speed computerized machine. 
+
+In traditional Varanasi Kadwa weaving, the artisan uses an independent wooden spool (tilli) for every individual flower motif. Thread by thread, the zari is intertwined into the mulberry silk warp and manually locked into place before the loom advances.
+
+Why do our weaving families still choose this painstaking method?
+Because machine-made jacquard leaves thousands of loose floating threads on the reverse side. Kadwa leaves zero. The back is as smooth and dignified as the front.
+
+When you wear a SareeKart Kadwa drape, you are wearing four continuous weeks of artisan devotion.
+
+Featured: Royal Banarasi Zardozi Brocade (SKU #1 — ₹18,999)
+• 6.3m Total Length (includes 0.8m running blouse piece)
+• Pure Mulberry Silk with Tested Gold Zari
+• Zero shipping charge across India
+
+Inquire directly on WhatsApp (+91 9059564499) for daylight videos and weaving provenance details.
+
+#SareeKart #VaranasiWeavers #KadwaSaree #HandloomHeritage #IndianHandicrafts #ArtisanCraft #BanarasiSilk
+```
+
+---
+
+### Day 4: [Product] Venkatagiri Fine Cotton Jamdani — Luxury That Breathes
+- **Format**: Single image daylight showcase & drape flow clip
+- **Featured Drape**: SKU #3 (*Venkatagiri Fine Cotton Jamdani*, Midnight Black | ₹8,667)
+- **Visual Asset**: Saree flowing in morning breeze on clean wooden floor ([Asset Link](https://kankatala.com/cdn/shop/files/1216719148_5.webp?v=1786345549&width=1070))
+- **Ready-to-Copy Caption**:
+```text
+Who decided that festive sarees must feel heavy, stifling, and synthetic?
+
+Woven in the historic weaving town of Venkatagiri, Andhra Pradesh, this Midnight Black handloom drape is spun with combed 100s fine cotton yarn. It is lighter than air, completely breathable for humid afternoon rituals, and stays crisp from morning pooja to evening dinner.
+
+Embellished with delicate golden zari buttas and an authentic extra-weft Jamdani pallu, it gives you unmistakable royal presence without the weight of heavy brocade.
+
+Product Details:
+• SKU #3 — Venkatagiri Fine Cotton Jamdani Saree
+• Fabric: Combed 100s Fine Cotton (Pure natural fibers)
+• Color: Midnight Black with Fine Tested Metallic Zari
+• Dimensions: Full 6.3m length (5.5m body + 0.8m blouse piece)
+• Price: ₹8,667 (Direct artisan price, free domestic shipping)
+
+Message us on WhatsApp (+91 9059564499) to view high-resolution daylight draping clips.
+
+#SareeKart #VenkatagiriCotton #JamdaniWeave #CottonHandloom #BlackSaree #SustainableLuxury #HandwovenIndia
+```
+
+---
+
+### Day 5: [Education] The 3 Simple Home Tests for Pure Handloom Fabric
+- **Format**: 3-Slide Infographic / Educational Carousel
+- **Educational Topic**: How buyers can independently verify pure silk and combed cotton from synthetic adulteration.
+- **Ready-to-Copy Caption**:
+```text
+Before you invest in a luxury saree, here are 3 reliable, scientifically proven ways to test if your fabric is genuine natural fiber or a synthetic polyester blend:
+
+1. The Organic Burn Test (For unstitched fringe threads):
+• Pure Silk: Burns slowly with the natural scent of burning hair/feathers. Leaves a dark, crushable ash that crumbles completely between your fingers.
+• Synthetic Polyester: Melts quickly, smells like sweet burning plastic, and leaves a hard, uncrushable plastic bead that cannot be powdered.
+
+2. The Friction & Static Test:
+• Natural Fibers: Pure cotton and mulberry silk do not generate static cling. They drape with natural weight and breathe effortlessly.
+• Synthetics: Rubbing two layers together creates static crackle and clings to your legs.
+
+3. The Reverse-Side Weave Audit:
+• True Handloom: Exhibits subtle, organic variations in warp tension and clean thread locks.
+• Mass-Market Powerloom: Perfect, mechanical grid repetition with loose floating threads across the back.
+
+Every SareeKart drape is backed by our 7-day doorstep inspection guarantee—inspect your saree in your own home with complete peace of mind.
+
+Questions about testing handloom fibers? Drop a comment below or chat with our textile team on WhatsApp (+91 9059564499).
+
+#SareeKart #TextileEducation #HandloomPurity #PureSilkTest #FabricCare #SmartShopper #HandloomAuthenticity
+```
+
+---
+
+## 6. Additional Customer Consultation Playbooks
+
+### Lead-001 (Bangalore — Bridal Kadwa Consultation)
+- **Status**: `PRODUCT_SHARED` (SKU #1, ₹18,999)
+- **Context**: Awaiting mother & bride consensus on Ruby Red shade against wedding hall lighting.
+- **Advisory Touchpoint Script**:
+  > *"Namaste [Name]! Hope your wedding planning is progressing smoothly. When selecting a bridal red, lighting makes all the difference: in warm incandescent mandap lighting, our Ruby Red takes on a deep crimson royal tone, while in natural outdoor daylight, the gold Kadwa zari vines shimmer vibrantly. Please take all the time you need with your mother. Whenever you are ready, I can share a short side-by-side video under both lighting conditions! 🙏"*
+
+### Lead-003 (Chennai — Executive Linen Drape Comfort)
+- **Status**: `PRODUCT_SHARED` (SKU #6, ₹9,800)
+- **Context**: Inquiring about daily office desk wear and whether organic linen creases uncomfortably.
+- **Advisory Touchpoint Script**:
+  > *"Namaste [Name]! Regarding your question about daily office wear: unlike stiff starch-treated cottons, our handspun Bhagalpur organic linen in Natural Ivory is pre-washed and exceptionally supple. When sitting at a desk, it forms gentle, relaxed ripples rather than sharp creases, and breathes comfortably in warm weather. The 0.8m running blouse piece can be tailored or paired with a simple raw silk black blouse for an effortless executive look!"*
+
+---
+
+## 7. Summary of System Safeguards
 
 - **Zero Engineering Churn**: Local and remote git branches remain locked on `main`.
 - **Zero Paid Spend**: All operations rely on organic social posting, WhatsApp, and manual relationship management.
