@@ -199,7 +199,58 @@ Questions about testing handloom fibers? Drop a comment below or chat with our t
 
 ---
 
-## 6. Additional Customer Consultation Playbooks
+### Day 6: [Product] Pochampally Double Ikat — Flawless Geometric Symmetry
+- **Format**: High-resolution macro detail reel / single-image focus
+- **Featured Drape**: SKU #4 (*Pochampally Double Ikat Silk*, Emerald Green | ₹24,111)
+- **Visual Asset**: Macro photograph of the tie-dyed warp and weft diamond junctions ([Asset Link](https://kankatala.com/cdn/shop/files/1216730670_1.webp?v=1786097422&width=1070))
+- **Ready-to-Copy Caption**:
+```text
+Look closely at these Emerald Green diamond motifs. In single ikat, either the warp or the weft is dyed. 
+
+In authentic Pochampally Double Ikat, both the vertical warp threads and the horizontal weft threads are individually mapped, counted, tied, and resist-dyed before they ever touch the loom.
+
+When the weaver operates the shuttle, the dyed warp and weft must meet at exact millimetre coordinates. If a single thread shifts by even a fraction of a millimetre, the crisp geometric diamond blurs.
+
+Woven in Pochampally / Bhoodan, Telangana, this heirloom drape represents pure mathematical precision married with ancestral Indian craft:
+• SKU #4 — Pochampally Double Ikat Silk Saree
+• Fabric: 100% Pure Mulberry Silk
+• Color: Regal Emerald Green with Woven Framing Borders
+• Dimensions: Full 6.3m (includes 0.8m running blouse piece)
+• Price: ₹24,111 (Direct fair-trade artisan price)
+
+Inquire on WhatsApp (+91 9059564499) for a 1-to-1 video drape walkthrough.
+
+#SareeKart #PochampallySilk #DoubleIkat #TeliaRumal #GeometricSaree #PureSilkSaree #IndianTextiles #HandloomCollector
+```
+
+---
+
+### Day 7: [Story] The 11-Point Light Table QC — How We Protect Your Unboxing
+- **Format**: Behind-the-scenes packaging & quality assurance carousel
+- **Theme**: SareeKart's zero-compromise pre-dispatch inspection protocol
+- **Visual Asset**: Flat-lay inspection table with tape measure, pallu detail, and moisture-barrier wrap ([Asset Link](https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&fm=webp&w=1200&q=80))
+- **Ready-to-Copy Caption**:
+```text
+Before any SareeKart drape leaves our studio for your doorstep, it must pass an uncompromising 11-point inspection under calibrated daylight lighting:
+
+1. Exact Tape Measure Audit: Full 6.3 meters confirmed (5.5m body drape + 0.8m unstitched running blouse, 46-inch width).
+2. Warp & Weft Integrity: Flat light-table review ensuring zero reed marks, loose thread runs, or skipped picks.
+3. Zari Shimmer & Finish: Metallic zari borders examined for consistent luster and zero electroplate tarnish.
+4. Cleanliness & Hygiene: 360-degree review ensuring pristine selvages with zero handling soilage.
+5. Moisture-Barrier Seal: Wrapped inside virgin moisture-barrier poly sleeves and heavy-duty corrugated cartons with tamper-evident H-tape sealing.
+
+We do not believe in mass-market shortcuts. Every handloom saree is a cultural heirloom—and we inspect it as one.
+
+All purchases are backed by our verified 7-day post-delivery inspection policy.
+
+Chat directly with our team on WhatsApp (+91 9059564499) to find the perfect drape for your upcoming celebration.
+
+#SareeKart #QualityAssurance #HandloomCare #BehindTheScenes #UnboxingExperience #LuxuryPackaging #HandwovenWithLove
+```
+
+---
+
+## 6. Complete Customer Consultation Playbooks (The 7 Active Leads)
 
 ### Lead-001 (Bangalore — Bridal Kadwa Consultation)
 - **Status**: `PRODUCT_SHARED` (SKU #1, ₹18,999)
@@ -207,11 +258,38 @@ Questions about testing handloom fibers? Drop a comment below or chat with our t
 - **Advisory Touchpoint Script**:
   > *"Namaste [Name]! Hope your wedding planning is progressing smoothly. When selecting a bridal red, lighting makes all the difference: in warm incandescent mandap lighting, our Ruby Red takes on a deep crimson royal tone, while in natural outdoor daylight, the gold Kadwa zari vines shimmer vibrantly. Please take all the time you need with your mother. Whenever you are ready, I can share a short side-by-side video under both lighting conditions! 🙏"*
 
+### Lead-002 (Hyderabad — Festive / Temple Pooja)
+- **Status**: `CHECKOUT_STARTED` (SKU #3, ₹8,667)
+- **Context**: Awaiting authentic bank payment UTR.
+- **Protocol**: Zero repeated follow-ups. Full customer space respected.
+
 ### Lead-003 (Chennai — Executive Linen Drape Comfort)
 - **Status**: `PRODUCT_SHARED` (SKU #6, ₹9,800)
 - **Context**: Inquiring about daily office desk wear and whether organic linen creases uncomfortably.
 - **Advisory Touchpoint Script**:
   > *"Namaste [Name]! Regarding your question about daily office wear: unlike stiff starch-treated cottons, our handspun Bhagalpur organic linen in Natural Ivory is pre-washed and exceptionally supple. When sitting at a desk, it forms gentle, relaxed ripples rather than sharp creases, and breathes comfortably in warm weather. The 0.8m running blouse piece can be tailored or paired with a simple raw silk black blouse for an effortless executive look!"*
+
+### Lead-004 (Delhi — Corporate Gifting Committee)
+- **Status**: `QUALIFIED` (SKU #8, ₹13,200)
+- **Context**: Awaiting committee budget sign-off for corporate gifting to Pune destination.
+- **Advisory Touchpoint Script**:
+  > *"Namaste [Name]! Just touching base regarding your committee's corporate gifting selection. Our Gadwal Cotton-Silk in Mustard Gold (SKU #8) remains one of our most distinguished gifts because it offers universal 6.3m sizing, official GST-compliant tax invoicing, and heavy ceremonial zari borders without the weight of full silk. Let me know if your finance team needs a formal proforma invoice or specimen spec sheet! 🙏"*
+
+### Lead-005 (Mumbai — Hand-Embroidered Organza Drape Comparison)
+- **Status**: `FOLLOW_UP_SENT` (SKU #5, ₹14,500)
+- **Context**: Evaluating full 6.3m pure silk cut vs boutique 5.5m alternatives.
+- **Advisory Touchpoint Script**:
+  > *"Namaste [Name]! Hope you are having a lovely weekend. When comparing organza drapes, boutique pieces often measure only 5.2m to 5.5m, making pleats flare stiffly. Our hand-embroidered Dusty Rose organza is cut to a generous 6.3m with tailored blouse fabric, allowing the translucent folds to fall in graceful, soft tiers. Take all the time you need to review!"*
+
+### Lead-006 (Pune — Milestone 25th Anniversary)
+- **Status**: `FOLLOW_UP_SCHEDULED` (SKU #4, ₹24,111)
+- **Context**: Agreed Saturday morning check-in post-travel. (Touchpoint pre-drafted in Section 4 above).
+
+### Lead-008 (Bangalore — Festive Drapes: Cotton vs Tissue)
+- **Status**: `PRODUCT_SHARED` (SKU #3 vs SKU #11, ₹8,667 vs ₹11,800)
+- **Context**: Choosing between lightweight breathable cotton and celebratory tissue shimmer.
+- **Advisory Touchpoint Script**:
+  > *"Namaste [Name]! To help with your choice between the Venkatagiri Cotton (SKU #3) and the Chanderi Tissue (SKU #11): If your family function is during warm morning hours where you will be moving around a lot, the combed 100s Venkatagiri gives you all-day breathable comfort. If it is an evening reception under chandeliers, the Champagne Silver Chanderi tissue catches artificial lighting with stunning luminescence. Which time of day is the main function?"*
 
 ---
 
