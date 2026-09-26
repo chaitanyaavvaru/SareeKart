@@ -90,6 +90,30 @@ Curious how this drape reflects natural daylight? Send us a message on WhatsApp 
 
 ---
 
+### Day 2: [Education] The 6.3-Meter Standard — Why 5.5m Commercial Sarees Fall Short
+- **Format**: 3-Slide Educational Carousel / Infographic
+- **Educational Topic**: Why true luxury handlooms require a full 6.3 meters (5.5m body drape + 0.8m running blouse piece) and a 46-inch width, contrasted against mass-market sarees shortened to 5.2m–5.5m to cut fabric costs.
+- **Visual Asset**: Measuring tape on loom showing full 6.3m running length ([Asset Link](https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&fm=webp&w=1200&q=80))
+- **Ready-to-Copy Caption**:
+```text
+Have you ever draped a saree only to find that you ran out of fabric for the pallu, or had to sacrifice front pleats?
+
+In commercial mass-production, many brands cut costs by reducing saree lengths to 5.2 or 5.5 meters, or omitting the running blouse piece entirely.
+
+At SareeKart, every handloom drape adheres to the uncompromising 6.3-Meter Standard:
+• 5.5 Meters of continuous body drape for full, generous front pleats.
+• 0.8 Meters of unsevered running blouse piece crafted from the same warp.
+• 46-Inch loom width (1.17m) ensuring proper floor-skimming length for all heights.
+
+When you invest in authentic artisan weaving, you never have to compromise on drape grace or pleat fullness.
+
+Explore our collection of authentic 6.3m pure silk and fine cotton handlooms on WhatsApp (+91 9059564499).
+
+#SareeKart #TextileEducation #HandloomSaree #SareeDraping #SareeLength #IndianHandlooms #SustainableFashion #PureSilk
+```
+
+---
+
 ## 4. Saturday Touchpoint Preparation: Lead-006
 
 As documented in the active Lead Tracker, `Lead-006` requested follow-up on Saturday post-travel regarding their 25th milestone anniversary.
