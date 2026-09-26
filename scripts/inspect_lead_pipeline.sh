@@ -103,10 +103,14 @@ echo "  • Priority 1: Lead-006 Saturday Touchpoint Dispatched (Awaiting family
 echo "  • Priority 2: Public Production is LIVE (sareekart.vercel.app); Preview protection preserved"
 echo "  • Priority 3: When Lead-002 sends bank UTR, run: ./scripts/verify_order_fulfillment.sh 3 8667 HYD \"<UTR>\""
 echo "------------------------------------------------------------------------"
-echo "[6] FULFILLMENT HARNESS READINESS"
+echo "[6] OPERATIONAL TOOLING & HARNESS READINESS"
+if [ -f "${SCRIPT_DIR}/verify_live_domain.sh" ]; then
+    echo "  • Domain DNS Probe:  [READY] (${SCRIPT_DIR}/verify_live_domain.sh)"
+fi
+if [ -f "${SCRIPT_DIR}/verify_12_point_storefront_smoke.sh" ]; then
+    echo "  • 12-Pt Smoke Probe: [READY] (${SCRIPT_DIR}/verify_12_point_storefront_smoke.sh)"
+fi
 if [ -f "${SCRIPT_DIR}/verify_order_fulfillment.sh" ]; then
     echo "  • Order QC Harness:  [READY] (${SCRIPT_DIR}/verify_order_fulfillment.sh)"
-else
-    echo "  • Order QC Harness:  [MISSING]"
 fi
 echo "========================================================================"
