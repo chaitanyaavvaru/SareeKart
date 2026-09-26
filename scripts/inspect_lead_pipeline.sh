@@ -81,7 +81,7 @@ echo "  Lead-002  HYD    Festive Temple      SKU #3 Venkatagiri Jam. ₹8,667   
 echo "  Lead-003  MAA    Executive Office    SKU #6 Handspun Linen   ₹9,800    PRODUCT_SHARED"
 echo "  Lead-004  DEL    Corporate Gifting   SKU #8 Gadwal Silk      ₹13,200   QUALIFIED"
 echo "  Lead-005  BOM    Evening Reception   SKU #5 Organza Pastel   ₹14,500   FOLLOW_UP_SENT"
-echo "  Lead-006  PNQ    25th Anniversary    SKU #4 Pochampally Ikat ₹24,111   FOLLOW_UP_SCHEDULED"
+echo "  Lead-006  PNQ    25th Anniversary    SKU #4 Pochampally Ikat ₹24,111   FOLLOW_UP_SENT"
 echo "  Lead-008  BLR    Festive Gathering   SKU #3 vs SKU #11       ₹8,667+   PRODUCT_SHARED"
 echo "  --------  -----  ------------------  ----------------------  --------  ------------------"
 echo "  Lead-007  CCU    Wholesale Reseller  [EXCLUDED]              N/A       PERMANENT DO NOT CONTACT"
@@ -89,7 +89,14 @@ echo "  Lead-007  CCU    Wholesale Reseller  [EXCLUDED]              N/A       P
 # 4. Immediate Calendar Action
 echo "------------------------------------------------------------------------"
 echo "[5] ACTION REQUIRED TODAY"
-echo "  • Priority 1: Lead-006 Saturday Check-In (Pune, 25th Wedding Anniversary, SKU #4, ₹24,111)"
+echo "  • Priority 1: Lead-006 Saturday Touchpoint Dispatched (Awaiting family review; zero pressure)"
 echo "  • Priority 2: In Vercel Project Settings -> Deployment Protection -> Disable Vercel Auth"
-echo "  • Priority 3: When Lead-002 sends bank UTR, run 11-point light-table QC & courier packaging"
+echo "  • Priority 3: When Lead-002 sends bank UTR, run: ./scripts/verify_order_fulfillment.sh 3 8667 HYD \"<UTR>\""
+echo "------------------------------------------------------------------------"
+echo "[6] FULFILLMENT HARNESS READINESS"
+if [ -f "${SCRIPT_DIR}/verify_order_fulfillment.sh" ]; then
+    echo "  • Order QC Harness:  [READY] (${SCRIPT_DIR}/verify_order_fulfillment.sh)"
+else
+    echo "  • Order QC Harness:  [MISSING]"
+fi
 echo "========================================================================"

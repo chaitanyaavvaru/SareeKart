@@ -539,7 +539,7 @@ Patience and respect build long-term luxury relationships; high-pressure spam de
 
 ## Section 9: Active Lead Tracker
 
-*Status as of: 2026-09-25 | Baseline Cohort: 8 Leads*
+*Status as of: 2026-09-26 | Baseline Cohort: 8 Leads*
 
 | Lead ID | Acquisition Source | Occasion / Context | Budget Range | Product of Interest | Current Status | Next Agreed Action / Boundary |
 |---|---|---|---|---|---|---|
@@ -548,7 +548,7 @@ Patience and respect build long-term luxury relationships; high-pressure spam de
 | **Lead-003** | WhatsApp Direct | Daily / Executive Wear | ₹8,000–₹10,000 | SKU #6 (*Handspun Organic Linen*) | `PRODUCT_SHARED` | Awaiting customer feedback regarding unstitched blouse piece inclusion and daily office comfort. |
 | **Lead-004** | WhatsApp Direct | Corporate Gifting | ₹12,000–₹15,000 | SKU #8 (*Gadwal Cotton-Silk*) | `QUALIFIED` | Awaiting gifting committee budget sign-off for destination presentation. |
 | **Lead-005** | WhatsApp Direct | Party / Cocktail | ₹14,000–₹16,000 | SKU #5 (*Hand-Embroidered Organza*) | `FOLLOW_UP_SENT` | Awaiting customer evaluation of full 6.3m pure silk cut vs 5.5m boutique alternative. |
-| **Lead-006** | WhatsApp Direct | Milestone Anniversary | ₹20,000–₹25,000 | SKU #4 (*Pochampally Double Ikat*) | `FOLLOW_UP_SCHEDULED` | Scheduled polite touch base on Saturday post-travel regarding late-October celebration. |
+| **Lead-006** | WhatsApp Direct | Milestone Anniversary | ₹20,000–₹25,000 | SKU #4 (*Pochampally Double Ikat*) | `FOLLOW_UP_SENT` | Saturday daylight video touchpoint dispatched (2026-09-26T10:30:00Z). Awaiting family review at their own pace; zero pressure. |
 | **Lead-008** | WhatsApp Direct | Festive Drapes | ₹8,000–₹12,000 | SKU #3 vs SKU #11 (Cotton vs Tissue) | `PRODUCT_SHARED` | Awaiting customer drape preference for upcoming family celebration. |
 | **Lead-007** | WhatsApp Direct | Wholesale Reseller | Bulk Reselling | N/A | **`NOT_INTERESTED`** | **`DO NOT CONTACT`**. Permanent non-contact boundary strictly enforced. Zero outreach. |
 
