@@ -7,8 +7,8 @@ set -euo pipefail
 
 DOMAIN="${1:-sareekart.com}"
 WWW_DOMAIN="www.${DOMAIN}"
-VERCEL_IP="76.76.21.21"
-VERCEL_CNAME="cname.vercel-dns.com"
+VERCEL_IP="${2:-76.76.21.21}"
+VERCEL_CNAME="${3:-cname.vercel-dns.com}"
 
 echo "========================================================================"
 echo "          SareeKart Production Domain & DNS Cutover Probe               "
