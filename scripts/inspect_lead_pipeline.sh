@@ -9,7 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 DOMAIN="sareekart.com"
-VERCEL_HOST="sareekart-git-main-chaitanya-603e.vercel.app"
+VERCEL_PROD_HOST="sareekart.vercel.app"
+VERCEL_BRANCH_HOST="sareekart-git-main-chaitanya-603e.vercel.app"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 echo "========================================================================"
@@ -24,18 +25,27 @@ echo "------------------------------------------------------------------------"
 # 1. Network Ingress Probes
 echo "[1] NETWORK & INGRESS GATES"
 
-# 1.1 Vercel Edge Probe
-VERCEL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "https://${VERCEL_HOST}" 2>/dev/null || echo "TIMEOUT")
-if [ "${VERCEL_STATUS}" = "200" ]; then
-    echo "  • Vercel Edge:       [LIVE - HTTP 200 OK] (https://${VERCEL_HOST})"
-elif [ "${VERCEL_STATUS}" = "302" ]; then
-    echo "  • Vercel Edge:       [ACTIVE - SSO/AUTH REQUIRED] (Deployment Protection ON)"
-    echo "                       -> Action: Toggle 'Vercel Authentication' to Disabled in Vercel settings"
+# 1.1 Vercel Public Production Probe
+PROD_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "https://${VERCEL_PROD_HOST}" 2>/dev/null || echo "TIMEOUT")
+if [ "${PROD_STATUS}" = "200" ]; then
+    echo "  • Public Production: [LIVE - HTTP 200 OK] (https://${VERCEL_PROD_HOST})"
+elif [ "${PROD_STATUS}" = "302" ]; then
+    echo "  • Public Production: [SSO/AUTH REQUIRED] (Deployment Protection ON)"
 else
-    echo "  • Vercel Edge:       [RESPONSE: ${VERCEL_STATUS}] (https://${VERCEL_HOST})"
+    echo "  • Public Production: [RESPONSE: ${PROD_STATUS}] (https://${VERCEL_PROD_HOST})"
 fi
 
-# 1.2 DNS Nameserver Probe
+# 1.2 Vercel Branch / Preview Protection Probe
+BRANCH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "https://${VERCEL_BRANCH_HOST}" 2>/dev/null || echo "TIMEOUT")
+if [ "${BRANCH_STATUS}" = "302" ]; then
+    echo "  • Preview/Branch:    [PROTECTED - SSO ACTIVE] (https://${VERCEL_BRANCH_HOST})"
+elif [ "${BRANCH_STATUS}" = "200" ]; then
+    echo "  • Preview/Branch:    [PUBLIC - HTTP 200 OK] (https://${VERCEL_BRANCH_HOST})"
+else
+    echo "  • Preview/Branch:    [RESPONSE: ${BRANCH_STATUS}] (https://${VERCEL_BRANCH_HOST})"
+fi
+
+# 1.3 DNS Nameserver Probe
 NS_RECORDS=$(dig +short "${DOMAIN}" NS 2>/dev/null | tr '\n' ' ' || echo "NONE")
 if echo "${NS_RECORDS}" | grep -qi "afternic"; then
     echo "  • Gate 1 (DNS):      [BLOCKED] Nameservers pointed to Afternic (${NS_RECORDS})"
@@ -90,7 +100,7 @@ echo "  Lead-007  CCU    Wholesale Reseller  [EXCLUDED]              N/A       P
 echo "------------------------------------------------------------------------"
 echo "[5] ACTION REQUIRED TODAY"
 echo "  • Priority 1: Lead-006 Saturday Touchpoint Dispatched (Awaiting family review; zero pressure)"
-echo "  • Priority 2: In Vercel Project Settings -> Deployment Protection -> Disable Vercel Auth"
+echo "  • Priority 2: Public Production is LIVE (sareekart.vercel.app); Preview protection preserved"
 echo "  • Priority 3: When Lead-002 sends bank UTR, run: ./scripts/verify_order_fulfillment.sh 3 8667 HYD \"<UTR>\""
 echo "------------------------------------------------------------------------"
 echo "[6] FULFILLMENT HARNESS READINESS"
