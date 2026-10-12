@@ -62,7 +62,6 @@ jobs:
       run:
         working-directory: backend/backend
     env:
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/sareekart_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${{ secrets.CI_MYSQL_PASSWORD || 'ci_disposable_sareekart_2026' }}
 
