@@ -36,22 +36,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Node.js tests
-        run: node --test tests/*.test.mjs
-
       - name: Run ESLint
         run: npm run lint
 
       - name: Run production build
         run: npm run build
 
+      - name: Run Node.js tests
+        run: node --test tests/*.test.mjs
+
   backend-ci:
     name: Backend CI
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.CI_MYSQL_PASSWORD || 'ci_disposable_sareekart_2026' }}
+          MYSQL_DATABASE: sareekart_db
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
     defaults:
       run:
         working-directory: backend/backend
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/sareekart_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${{ secrets.CI_MYSQL_PASSWORD || 'ci_disposable_sareekart_2026' }}
 
     steps:
       - name: Checkout repository
@@ -67,5 +80,39 @@ jobs:
       - name: Ensure Maven wrapper is executable
         run: chmod +x mvnw
 
+      - name: Wait for MySQL readiness
+        run: |
+          echo "Waiting for MySQL service to become ready on 127.0.0.1:3306..."
+          READY=false
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -p"${SPRING_DATASOURCE_PASSWORD}" --silent; then
+              echo "MySQL is ready and accepting connections."
+              READY=true
+              break
+            fi
+            echo "MySQL not ready yet. Retrying in 2 seconds ($i/30)..."
+            sleep 2
+          done
+
+          if [ "$READY" != "true" ]; then
+            echo "Error: MySQL did not become ready within 60 seconds."
+            exit 1
+          fi
+
+          mysql -h 127.0.0.1 -P 3306 -u root -p"${SPRING_DATASOURCE_PASSWORD}" -e "SELECT VERSION();"
+
+      - name: Seed test database from canonical backup
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -p"${SPRING_DATASOURCE_PASSWORD}" sareekart_db < "$GITHUB_WORKSPACE/backups/sareekart_db_latest.sql"
+
+      - name: Verify seeded schema
+        run: |
+          TABLE_COUNT=$(mysql -h 127.0.0.1 -P 3306 -u root -p"${SPRING_DATASOURCE_PASSWORD}" sareekart_db -e "SHOW TABLES;" -s -N | wc -l | tr -d ' ')
+          echo "Restored $TABLE_COUNT tables in sareekart_db"
+          if [ "$TABLE_COUNT" -ne 37 ]; then
+            echo "Expected 37 tables, found $TABLE_COUNT"
+            exit 1
+          fi
+
       - name: Run backend test suite
-        run: ./mvnw test
+        run: ./mvnw test -Ddb.password="${SPRING_DATASOURCE_PASSWORD}"
