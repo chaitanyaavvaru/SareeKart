@@ -194,3 +194,30 @@ jobs:
 
           echo "=== Verify Backend Healthcheck Configuration ==="
           docker inspect sareekart-backend:ci --format '{{json .Config.Healthcheck}}' | grep -i "actuator/health"
+
+  terraform-ci:
+    name: Terraform Validation CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.7.5'
+
+      - name: Verify Terraform formatting
+        run: terraform fmt -check -recursive terraform/
+
+      - name: Initialize Dev Environment (Backend Disabled)
+        working-directory: terraform/environments/dev
+        run: terraform init -backend=false
+
+      - name: Validate Dev Environment Configuration
+        working-directory: terraform/environments/dev
+        run: terraform validate
