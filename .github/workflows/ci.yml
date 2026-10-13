@@ -150,7 +150,7 @@ jobs:
           fi
 
           echo "=== Verify Frontend UID ==="
-          FRONTEND_UID=$(docker run --rm --entrypoint id -u sareekart-frontend:ci)
+          FRONTEND_UID=$(docker run --rm --entrypoint id sareekart-frontend:ci -u)
           echo "Frontend UID: $FRONTEND_UID"
           if [ "$FRONTEND_UID" -eq 0 ]; then
             echo "Security violation: Frontend container UID is 0 (root)"
@@ -185,7 +185,7 @@ jobs:
           fi
 
           echo "=== Verify Backend UID ==="
-          BACKEND_UID=$(docker run --rm --entrypoint id -u sareekart-backend:ci)
+          BACKEND_UID=$(docker run --rm --entrypoint id sareekart-backend:ci -u)
           echo "Backend UID: $BACKEND_UID"
           if [ "$BACKEND_UID" -eq 0 ]; then
             echo "Security violation: Backend container UID is 0 (root)"
