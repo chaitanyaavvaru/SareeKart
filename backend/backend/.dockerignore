@@ -1,0 +1,48 @@
+# ============================================================================
+# SareeKart Backend — .dockerignore
+# Excludes files that must NOT be sent to the Docker build daemon.
+# Kept in sync with root .gitignore; add new patterns here as needed.
+# ============================================================================
+
+# ── Build outputs ────────────────────────────────────────────────────────────
+target/
+
+# ── IDE and OS files ─────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# ── Secrets / environment files ──────────────────────────────────────────────
+# IMPORTANT: .env files must NEVER reach a Docker image layer.
+.env
+.env.*
+*.env
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Test artefacts ───────────────────────────────────────────────────────────
+# Source files are needed; test-output directories are not.
+src/test/
+
+# ── Git metadata ─────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── Runtime upload directories ───────────────────────────────────────────────
+uploads/
+
+# ── Markdown / docs ──────────────────────────────────────────────────────────
+*.md
+docs/
+
+# ── CI / GitHub Actions ──────────────────────────────────────────────────────
+.github/
+
+# ── Files required by Docker build (must NOT be excluded) ────────────────────
+# pom.xml           ← COPY pom.xml . (dependency cache layer)
+# src/main/         ← COPY src ./src (application source)
+# src/main/resources/db/ ← Flyway migrations

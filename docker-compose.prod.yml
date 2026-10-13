@@ -44,9 +44,10 @@ services:
       - neo4j_prod_data:/data
     networks:
       - sareekart-internal
-    # Admin HTTP port 7474 is blocked; only internal Bolt connectivity is active
+    # Neo4j HTTP admin port 7474 is available intra-container even though it is
+    # not published to the host. curl is more portable than cypher-shell.
     healthcheck:
-      test: ["CMD-SHELL", "NEO4J_PASS=$${NEO4J_AUTH#*/} && cypher-shell -u neo4j -p \"$$NEO4J_PASS\" 'RETURN 1;' || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:7474"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -94,7 +95,10 @@ services:
     container_name: sareekart-prod-frontend
     restart: always
     ports:
-      - "80:80"
+      # Nginx runs as non-root on port 8080. A reverse proxy (e.g. Nginx, Traefik,
+      # Caddy) or load balancer should terminate TLS on 443 and proxy to 8080.
+      # For direct access without a proxy: change to "8080:8080".
+      - "80:8080"
     depends_on:
       backend:
         condition: service_healthy

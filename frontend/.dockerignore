@@ -1,0 +1,57 @@
+# ============================================================================
+# SareeKart Frontend — .dockerignore
+# Excludes files that must NOT be sent to the Docker build daemon.
+# The multi-stage build produces its own dist/ from source; the local copy
+# must be excluded to avoid stale artefacts being baked into the image.
+# ============================================================================
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
+# Docker build runs npm ci inside the container; local node_modules not needed.
+node_modules/
+
+# ── Local build output ───────────────────────────────────────────────────────
+# The build stage generates a fresh dist/; do NOT copy local dist/ into context.
+dist/
+
+# ── Secrets / environment files ──────────────────────────────────────────────
+.env
+.env.*
+.env.local
+.env.*.local
+*.env
+
+# ── IDE and OS files ─────────────────────────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Test artefacts ───────────────────────────────────────────────────────────
+test-results/
+playwright-report/
+coverage/
+
+# ── Git metadata ─────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── CI / GitHub Actions ──────────────────────────────────────────────────────
+.github/
+
+# ── Markdown / docs ──────────────────────────────────────────────────────────
+*.md
+
+# ── Files required by Docker build (must NOT be excluded) ────────────────────
+# package.json          ← COPY package*.json ./ (dependency layer)
+# package-lock.json     ← required by npm ci
+# src/                  ← application source
+# public/               ← Vite public assets
+# index.html            ← Vite entry point
+# vite.config.js        ← build configuration
+# tailwind.config.js    ← CSS framework config
+# postcss.config.js     ← CSS processing
+# nginx.conf            ← COPY nginx.conf into run stage
