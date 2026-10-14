@@ -242,12 +242,12 @@ jobs:
         run: tflint --version
 
       - name: Initialize TFLint AWS Ruleset Plugin
-        run: tflint --init --config "$GITHUB_WORKSPACE/terraform/.tflint.hcl"
+        run: tflint --chdir=terraform --init
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Run TFLint Code & Best-Practice Linting
-        run: tflint --config "$GITHUB_WORKSPACE/terraform/.tflint.hcl" --recursive --force terraform/
+        run: tflint --chdir=terraform --recursive --force
 
       - name: Run Trivy Security & Misconfiguration Scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
