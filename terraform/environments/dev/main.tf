@@ -22,9 +22,12 @@ module "vpc" {
 module "security_groups" {
   source = "../../modules/security_groups"
 
-  environment = var.environment
-  vpc_id      = module.vpc.vpc_id
-  tags        = var.tags
+  environment         = var.environment
+  vpc_id              = module.vpc.vpc_id
+  enable_neo4j_egress = var.neo4j_enabled
+  enable_rds_egress   = var.create_rds
+  tidb_egress_cidrs   = var.tidb_egress_cidrs
+  tags                = var.tags
 }
 
 # ── 3. S3 Storage for Media & Returns ────────────────────────────────────────

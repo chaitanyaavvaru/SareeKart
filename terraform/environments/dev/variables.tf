@@ -51,6 +51,12 @@ variable "database_url" {
   default     = "jdbc:mysql://<tidb_host>:4000/sareekart_db?useSSL=true&allowPublicKeyRetrieval=true"
 }
 
+variable "tidb_egress_cidrs" {
+  type        = list(string)
+  description = "CIDR blocks permitted for ECS outbound connections to TiDB Cloud on port 4000. Defaults to ['0.0.0.0/0'] due to dynamic endpoints in TiDB Cloud Serverless."
+  default     = ["0.0.0.0/0"]
+}
+
 variable "neo4j_enabled" {
   type        = bool
   description = "Whether Neo4j graph features are enabled. Defaults to FALSE (MySQL fallback active)."

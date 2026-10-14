@@ -26,11 +26,12 @@ resource "aws_internet_gateway" "main" {
 
 # ── Public Subnets (ALB Ingress) ─────────────────────────────────────────────
 resource "aws_subnet" "public" {
-  count                   = length(var.public_subnet_cidrs)
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_cidrs[count.index]
-  availability_zone       = var.availability_zones[count.index]
-  map_public_ip_on_launch = true
+  count             = length(var.public_subnet_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.public_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index]
+  # Public ALBs assign their own ENIs; setting false prevents unintended public IP auto-assignment
+  map_public_ip_on_launch = false
 
   tags = merge(var.tags, {
     Name        = "sareekart-${var.environment}-public-${var.availability_zones[count.index]}"

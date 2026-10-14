@@ -221,3 +221,40 @@ jobs:
       - name: Validate Dev Environment Configuration
         working-directory: terraform/environments/dev
         run: terraform validate
+
+  terraform-security-ci:
+    name: Terraform Security & Lint CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up TFLint CLI
+        uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
+        with:
+          tflint_version: v0.64.0
+
+      - name: Show TFLint version
+        run: tflint --version
+
+      - name: Initialize TFLint AWS Ruleset Plugin
+        run: tflint --init --config "$GITHUB_WORKSPACE/terraform/.tflint.hcl"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Run TFLint Code & Best-Practice Linting
+        run: tflint --config "$GITHUB_WORKSPACE/terraform/.tflint.hcl" --recursive --force terraform/
+
+      - name: Run Trivy Security & Misconfiguration Scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'config'
+          scan-ref: 'terraform'
+          version: 'v0.75.0'
+          format: 'table'
+          exit-code: '0' # Report-only baseline for Step 4.4 audit phase
+          hide-progress: true

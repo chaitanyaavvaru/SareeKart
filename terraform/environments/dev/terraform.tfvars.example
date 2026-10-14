@@ -16,6 +16,9 @@ assign_public_ip   = false # Explicit dev-only toggle: set to true ONLY if creat
 
 # Database: Preserves existing zero-cost TiDB Cloud integration
 database_url = "jdbc:mysql://<tidb_host>:4000/sareekart_db?useSSL=true&allowPublicKeyRetrieval=true"
+# Egress Allowlist: Defaults to 0.0.0.0/0 because TiDB Cloud Serverless uses dynamic public endpoints.
+# Set to specific CIDRs if dedicated VPC peering or a static egress proxy is deployed:
+# tidb_egress_cidrs = ["0.0.0.0/0"]
 
 # Graph Engine: Keep FALSE to use deterministic MySQL relational fallback
 neo4j_enabled = false

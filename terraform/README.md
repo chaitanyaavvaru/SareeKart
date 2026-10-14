@@ -85,12 +85,20 @@ docker run --rm -v $(pwd):/workspace -w /workspace/terraform/environments/dev ha
 
 ---
 
-## 4. GitHub Actions CI Integration
+## 4. GitHub Actions CI & Security Integration
 
-Terraform validation is automated in `.github/workflows/ci.yml` via the `terraform-ci` job:
+Infrastructure code quality and security are validated across two dedicated, read-only CI jobs:
+
+### A. Terraform Validation CI (`terraform-ci`)
 - **`terraform fmt -check -recursive`**: Enforces canonical indentation and style.
-- **`terraform init -backend=false`**: Downloads provider schema plugins without remote state or credentials.
+- **`terraform init -backend=false`**: Downloads provider schema plugins without remote state or credentials, verifying package checksums against `.terraform.lock.hcl`.
 - **`terraform validate`**: Verifies attribute types, module inputs/outputs, and HCL grammar offline with zero cloud cost.
+
+### B. Terraform Security & Lint CI (`terraform-security-ci`)
+- **TFLint (`v0.64.0`)**: Runs Terraform best-practice linting and evaluates the pinned AWS ruleset (`v0.49.0`). Scans recursively using `--force`, which reports lint findings without failing on findings alone while preserving non-zero exit codes on fatal configuration or execution errors. Action pinned to immutable commit SHA (`terraform-linters/setup-tflint@6ffdbaa3... # v6.3.2`).
+- **Trivy (`v0.75.0`)**: Scans `terraform/` for Infrastructure as Code (IaC) security misconfigurations across all resource types via `aquasecurity/trivy-action@ed142fd0... # v0.36.0` with `version: 'v0.75.0'`.
+- **Audit Baseline**: Operates under a report-only baseline during the Step 4.4 audit phase (`exit-code: 0` on Trivy, `--force` on TFLint), ensuring full finding transparency in job logs while still failing on scanner installation or execution failures.
+
 
 ---
 
