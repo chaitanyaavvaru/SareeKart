@@ -42,6 +42,8 @@ server:
       min-spare: 5
 
 logging:
+  pattern:
+    correlation: "[reqId=%X{requestId:-none}] "
   level:
     root: WARN
     com.sareekart: INFO

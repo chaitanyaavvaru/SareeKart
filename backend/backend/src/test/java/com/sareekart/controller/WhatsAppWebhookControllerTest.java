@@ -16,9 +16,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.slf4j.LoggerFactory;
+
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -43,20 +49,48 @@ class WhatsAppWebhookControllerTest {
     }
 
     @Test
-    @DisplayName("GET verifyWebhook returns 200 and challenge when token matches")
+    @DisplayName("GET verifyWebhook returns 200 and challenge when token matches, without leaking token in logs")
     void testVerifyWebhook_Success() {
-        ResponseEntity<String> response = controller.verifyWebhook("subscribe", "sareekart-verify-token", "challenge_abc_123");
+        Logger logger = (Logger) LoggerFactory.getLogger(WhatsAppWebhookController.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo("challenge_abc_123");
+        try {
+            ResponseEntity<String> response = controller.verifyWebhook("subscribe", "sareekart-verify-token", "challenge_abc_123");
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(response.getBody()).isEqualTo("challenge_abc_123");
+
+            for (ILoggingEvent event : listAppender.list) {
+                String msg = event.getFormattedMessage();
+                assertFalse(msg.contains("sareekart-verify-token"), "Verify token must NOT appear in log: " + msg);
+            }
+        } finally {
+            logger.detachAppender(listAppender);
+        }
     }
 
     @Test
-    @DisplayName("GET verifyWebhook returns 403 when token fails to match")
+    @DisplayName("GET verifyWebhook returns 403 when token fails to match, without leaking token in logs")
     void testVerifyWebhook_InvalidToken() {
-        ResponseEntity<String> response = controller.verifyWebhook("subscribe", "bad-token", "challenge_abc_123");
+        Logger logger = (Logger) LoggerFactory.getLogger(WhatsAppWebhookController.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        try {
+            ResponseEntity<String> response = controller.verifyWebhook("subscribe", "bad-token", "challenge_abc_123");
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+            for (ILoggingEvent event : listAppender.list) {
+                String msg = event.getFormattedMessage();
+                assertFalse(msg.contains("bad-token"), "Untrusted token must NOT appear in log: " + msg);
+            }
+        } finally {
+            logger.detachAppender(listAppender);
+        }
     }
 
     @Test

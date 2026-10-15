@@ -121,7 +121,7 @@ public class UserServiceImpl implements UserService {
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         Optional<User> userOpt = userRepository.findByEmail(normalizedEmail);
         if (userOpt.isEmpty()) {
-            log.warn("Password reset requested for non-existent email: {}", normalizedEmail);
+            log.warn("Password reset requested for non-existent user account");
             return null;
         }
 
@@ -143,8 +143,7 @@ public class UserServiceImpl implements UserService {
                 .build();
         passwordResetTokenRepository.save(resetToken);
 
-        log.info("Password reset token generated for user [{}]: {}", user.getEmail(), token);
-        log.info("Password reset link: http://localhost:5173/reset-password?token={}", token);
+        log.info("Password reset token generated successfully");
 
         return token;
     }
@@ -185,7 +184,7 @@ public class UserServiceImpl implements UserService {
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
 
-        log.info("Password successfully reset for user [{}]", user.getEmail());
+        log.info("Password successfully reset");
     }
 
     @Override
@@ -233,7 +232,7 @@ public class UserServiceImpl implements UserService {
                 .build();
         passwordResetTokenRepository.save(resetToken);
 
-        log.info("Recovery key validated and password reset token issued for user [{}]: {}", user.getEmail(), token);
+        log.info("Recovery key validated and password reset token issued");
         return token;
     }
 }

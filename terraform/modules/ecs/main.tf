@@ -88,7 +88,7 @@ resource "aws_lb_target_group" "backend" {
 
   health_check {
     enabled             = true
-    path                = "/actuator/health"
+    path                = "/actuator/health/readiness"
     port                = "8081"
     protocol            = "HTTP"
     matcher             = "200"
@@ -163,7 +163,7 @@ resource "aws_ecs_task_definition" "backend" {
       secrets = []
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+        command     = ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health/liveness || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3
@@ -201,6 +201,14 @@ resource "aws_ecs_service" "backend" {
     security_groups  = [var.ecs_security_group_id]
     assign_public_ip = var.assign_public_ip
   }
+
+  # Health check grace period (120s): Prevents ECS from terminating and replacing tasks
+  # during container startup and schema initialization before ALB readiness probes stabilize.
+  # Note on ECS behavior: In AWS ECS, if an ALB target group health check fails after the grace
+  # period, the ECS service scheduler will terminate and replace the task. If a shared database
+  # suffers a persistent outage, tasks could enter a replacement cycle unless external mitigation
+  # or circuit breakers are configured.
+  health_check_grace_period_seconds = 120
 
   load_balancer {
     target_group_arn = aws_lb_target_group.backend[0].arn

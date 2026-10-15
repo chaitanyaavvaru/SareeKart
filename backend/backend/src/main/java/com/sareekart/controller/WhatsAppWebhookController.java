@@ -29,14 +29,14 @@ public class WhatsAppWebhookController {
             @RequestParam(value = "hub.verify_token", required = false) String token,
             @RequestParam(value = "hub.challenge", required = false) String challenge) {
 
-        log.info("Received WhatsApp Webhook Verification Request: mode={}, token={}, challenge={}", mode, token, challenge);
+        log.info("Received WhatsApp Webhook Verification Request: mode={}, challengePresent={}", mode, (challenge != null && !challenge.isBlank()));
 
         if ("subscribe".equals(mode) && verifyToken.equals(token)) {
             log.info("Webhook verified successfully.");
             return ResponseEntity.ok(challenge);
         }
 
-        log.error("Webhook verification failed.");
+        log.warn("Webhook verification failed: invalid mode or token mismatch.");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 

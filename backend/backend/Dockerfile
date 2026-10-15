@@ -41,9 +41,9 @@ USER appuser
 
 EXPOSE 8081
 
-# Native HEALTHCHECK — polled by Docker daemon and compatible with Swarm/Compose.
-# curl is available in eclipse-temurin:17-jre-jammy (Ubuntu Jammy base).
+# Native HEALTHCHECK (Container Liveness) — polled by Docker daemon.
+# Uses /actuator/health/liveness so process responsiveness is decoupled from database availability.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=45s --retries=3 \
-  CMD curl -f http://localhost:8081/actuator/health || exit 1
+  CMD curl -f http://localhost:8081/actuator/health/liveness || exit 1
 
 ENTRYPOINT ["java", "-jar", "sareekart.jar"]

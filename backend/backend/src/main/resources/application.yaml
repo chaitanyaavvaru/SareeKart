@@ -61,6 +61,8 @@ jwt:
   expiration: ${JWT_EXPIRATION:86400000}
 
 logging:
+  pattern:
+    correlation: "[reqId=%X{requestId:-none}] "
   level:
     com.sareekart: ${LOG_LEVEL_SAREEKART:DEBUG}
     org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}

@@ -26,6 +26,8 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  # Backend inherits native container liveness probe (/actuator/health/liveness)
+  # directly from backend/backend/Dockerfile.
   backend:
     build:
       context: ./backend/backend

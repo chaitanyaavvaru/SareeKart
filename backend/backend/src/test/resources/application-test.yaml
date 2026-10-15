@@ -18,6 +18,8 @@ spring:
     enabled: false
 
 logging:
+  pattern:
+    correlation: "[reqId=%X{requestId:-none}] "
   level:
     com.sareekart: WARN
     org.springframework.web: WARN

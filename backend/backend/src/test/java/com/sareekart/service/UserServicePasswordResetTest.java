@@ -18,6 +18,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.slf4j.LoggerFactory;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -169,5 +174,114 @@ class UserServicePasswordResetTest {
         assertTrue(token.getUsed());
         verify(passwordResetTokenRepository).save(token);
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void requestPasswordReset_neverLogsRawTokenResetUrlOrEmail() {
+        Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
+
+        try {
+            when(userRepository.findByEmail("priya@example.com")).thenReturn(Optional.of(sampleUser));
+            when(passwordResetTokenRepository.findAllByUserAndUsedFalse(sampleUser)).thenReturn(new ArrayList<>());
+
+            String token = userService.requestPasswordReset("priya@example.com");
+
+            assertNotNull(token);
+            assertFalse(token.isBlank());
+
+            // Assert that none of the log messages contain the raw token, reset URL, or email address
+            for (ILoggingEvent event : listAppender.list) {
+                String formatted = event.getFormattedMessage();
+                assertFalse(formatted.contains(token), "Log message must NOT contain raw reset token: " + formatted);
+                assertFalse(formatted.contains("reset-password?token="), "Log message must NOT contain reset link: " + formatted);
+                assertFalse(formatted.contains("priya@example.com"), "Log message must NOT contain user email: " + formatted);
+                assertFalse(formatted.contains(sampleUser.getEmail()), "Log message must NOT contain user email: " + formatted);
+            }
+        } finally {
+            logger.detachAppender(listAppender);
+        }
+    }
+
+    @Test
+    void requestPasswordReset_nonExistentUserNeverLogsSubmittedEmail() {
+        Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
+
+        try {
+            when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
+
+            String result = userService.requestPasswordReset("ghost@example.com");
+
+            assertNull(result);
+
+            for (ILoggingEvent event : listAppender.list) {
+                String formatted = event.getFormattedMessage();
+                assertFalse(formatted.contains("ghost@example.com"), "Log message must NOT contain submitted email: " + formatted);
+            }
+        } finally {
+            logger.detachAppender(listAppender);
+        }
+    }
+
+    @Test
+    void resetPassword_neverLogsUserEmail() {
+        Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
+
+        try {
+            PasswordResetToken token = PasswordResetToken.builder()
+                    .token("active-token")
+                    .user(sampleUser)
+                    .used(false)
+                    .expiryDate(LocalDateTime.now().plusMinutes(20))
+                    .build();
+            when(passwordResetTokenRepository.findByTokenAndUsedFalse("active-token")).thenReturn(Optional.of(token));
+            when(passwordEncoder.encode("newSecretPass123")).thenReturn("newHashedPassword");
+
+            userService.resetPassword("active-token", "newSecretPass123");
+
+            for (ILoggingEvent event : listAppender.list) {
+                String formatted = event.getFormattedMessage();
+                assertFalse(formatted.contains("priya@example.com"), "Log message must NOT contain user email: " + formatted);
+                assertFalse(formatted.contains(sampleUser.getEmail()), "Log message must NOT contain user email: " + formatted);
+            }
+        } finally {
+            logger.detachAppender(listAppender);
+        }
+    }
+
+    @Test
+    void verifyRecoveryKeyAndGenerateResetToken_neverLogsRawTokenOrEmail() {
+        sampleUser.setRecoveryKey("SK-REC-TEST-2026");
+        Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
+
+        try {
+            when(userRepository.findByEmail("priya@example.com")).thenReturn(Optional.of(sampleUser));
+            when(passwordResetTokenRepository.findAllByUserAndUsedFalse(sampleUser)).thenReturn(new ArrayList<>());
+
+            String token = userService.verifyRecoveryKeyAndGenerateResetToken("priya@example.com", "SK-REC-TEST-2026");
+
+            assertNotNull(token);
+            assertFalse(token.isBlank());
+
+            for (ILoggingEvent event : listAppender.list) {
+                String formatted = event.getFormattedMessage();
+                assertFalse(formatted.contains(token), "Log message must NOT contain raw issued token: " + formatted);
+                assertFalse(formatted.contains("priya@example.com"), "Log message must NOT contain user email: " + formatted);
+                assertFalse(formatted.contains(sampleUser.getEmail()), "Log message must NOT contain user email: " + formatted);
+            }
+        } finally {
+            logger.detachAppender(listAppender);
+        }
     }
 }
