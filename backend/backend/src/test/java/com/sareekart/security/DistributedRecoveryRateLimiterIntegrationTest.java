@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -75,6 +76,8 @@ public class DistributedRecoveryRateLimiterIntegrationTest {
         CountDownLatch startLatch = new CountDownLatch(1);
         AtomicInteger badRequestCount = new AtomicInteger(0);
         AtomicInteger rateLimitExceededCount = new AtomicInteger(0);
+        AtomicInteger unexpectedExceptionCount = new AtomicInteger(0);
+        List<Throwable> unexpectedExceptions = new CopyOnWriteArrayList<>();
 
         List<Future<?>> futures = new ArrayList<>();
         for (int i = 0; i < totalThreads; i++) {
@@ -92,7 +95,9 @@ public class DistributedRecoveryRateLimiterIntegrationTest {
                     badRequestCount.incrementAndGet();
                 } catch (RateLimitExceededException ex) {
                     rateLimitExceededCount.incrementAndGet();
-                } catch (Exception ignored) {
+                } catch (Throwable ex) {
+                    unexpectedExceptionCount.incrementAndGet();
+                    unexpectedExceptions.add(ex);
                 }
             }));
         }
@@ -103,6 +108,9 @@ public class DistributedRecoveryRateLimiterIntegrationTest {
             f.get(10, TimeUnit.SECONDS);
         }
         executor.shutdown();
+
+        // Verify zero unexpected exceptions escaped
+        assertEquals(0, unexpectedExceptionCount.get(), "Zero unexpected exceptions should escape: " + unexpectedExceptions);
 
         // Verify that across both instances combined, strictly 5 attempts execute and 7 are throttled
         assertEquals(5, badRequestCount.get(), "Combined service instances must permit strictly 5 attempts before blocking");
@@ -189,5 +197,80 @@ public class DistributedRecoveryRateLimiterIntegrationTest {
         assertThrows(BadRequestException.class, () ->
                 userService.verifyRecoveryKeyAndGenerateResetToken(testEmail, generatedRawKey)
         );
+    }
+
+    @Test
+    @DisplayName("DISTRIBUTED-04: Concurrent first-ever requests across multiple instances safely coordinate with initially absent rows")
+    void testConcurrentFirstEverRequestsWithAbsentCoordinatorRows() throws Exception {
+        String clientIp = "198.51.100.222";
+        String account = "first-use-target@sareekart.com";
+        String keyIp = RecoveryRateLimiterService.computeCoordinateKey("ip", clientIp);
+        String keyAcct = RecoveryRateLimiterService.computeCoordinateKey("acct", account);
+
+        // Verify precondition: neither IP nor account coordinator rows exist in database
+        assertTrue(coordinatorRepository.findByCoordinateKey(keyIp).isEmpty(), "IP coordinator row must be absent initially");
+        assertTrue(coordinatorRepository.findByCoordinateKey(keyAcct).isEmpty(), "Account coordinator row must be absent initially");
+
+        int totalThreads = 12;
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        AtomicInteger badRequestCount = new AtomicInteger(0);
+        AtomicInteger rateLimitExceededCount = new AtomicInteger(0);
+        AtomicInteger unexpectedExceptionCount = new AtomicInteger(0);
+        List<Throwable> unexpectedExceptions = new CopyOnWriteArrayList<>();
+
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < totalThreads; i++) {
+            final int threadIdx = i;
+            // Alternate requests between Instance 1 and Instance 2 sharing the database
+            final RecoveryRateLimiterService assignedInstance = (threadIdx % 2 == 0) ? serviceInstance1 : serviceInstance2;
+
+            futures.add(executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    assignedInstance.executeWithRateLimit(clientIp, account, () ->
+                            userService.verifyRecoveryKeyAndGenerateResetToken(account, RecoveryKeyUtil.generateRecoveryKey())
+                    );
+                } catch (BadRequestException ex) {
+                    badRequestCount.incrementAndGet();
+                } catch (RateLimitExceededException ex) {
+                    rateLimitExceededCount.incrementAndGet();
+                } catch (Throwable ex) {
+                    unexpectedExceptionCount.incrementAndGet();
+                    unexpectedExceptions.add(ex);
+                }
+            }));
+        }
+
+        // Release all 12 threads simultaneously to trigger first-use race condition
+        startLatch.countDown();
+        for (Future<?> f : futures) {
+            f.get(15, TimeUnit.SECONDS);
+        }
+        executor.shutdown();
+
+        // Verify zero unexpected exceptions escaped (no DataIntegrityViolationException or deadlock)
+        assertEquals(0, unexpectedExceptionCount.get(), "Zero duplicate-key or deadlock errors should escape: " + unexpectedExceptions);
+
+        // Exactly 5 attempts proceed to recovery verification (HTTP 400), 7 are rejected with HTTP 429
+        assertEquals(5, badRequestCount.get(), "Exactly 5 first-ever requests must proceed to recovery verification");
+        assertEquals(7, rateLimitExceededCount.get(), "Exactly 7 requests must be rejected with HTTP 429 RateLimitExceededException");
+
+        // Verify persistent coordination rows are created and reflect exactly 5 failures
+        RateLimitCoordinator ipCoord = coordinatorRepository.findByCoordinateKey(keyIp)
+                .orElseThrow(() -> new AssertionError("IP coordinator row must be created in persistent storage"));
+        RateLimitCoordinator acctCoord = coordinatorRepository.findByCoordinateKey(keyAcct)
+                .orElseThrow(() -> new AssertionError("Account coordinator row must be created in persistent storage"));
+
+        assertEquals(5, ipCoord.getFailedAttempts(), "IP coordinator row must record exactly 5 failed attempts");
+        assertEquals(5, acctCoord.getFailedAttempts(), "Account coordinator row must record exactly 5 failed attempts");
+
+        // Verify audit log has exactly 5 failure entries recorded
+        long auditCount = auditLogRepository.countByActionAndEntityIdAndCreatedAtAfter(
+                RecoveryRateLimiterService.FAILED_ACTION,
+                account,
+                LocalDateTime.now().minusMinutes(15)
+        );
+        assertEquals(5, auditCount, "Audit log must contain exactly 5 failure entries for this account");
     }
 }

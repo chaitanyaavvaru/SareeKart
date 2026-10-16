@@ -9,6 +9,7 @@ import com.sareekart.repository.RateLimitCoordinatorRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -86,21 +87,39 @@ public class RecoveryRateLimiterService {
             ensureCoordinatorRowExists(secondKey);
         }
 
-        ExecutionResult<T> result;
-        if (transactionManager != null) {
-            TransactionTemplate tmpl = new TransactionTemplate(transactionManager);
-            tmpl.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            result = tmpl.execute(status -> executeInLockedTransaction(firstKey, secondKey, distinct, clientIp, normalizedEmail, action));
-        } else {
-            synchronized (this) {
-                result = executeInLockedTransaction(firstKey, secondKey, distinct, clientIp, normalizedEmail, action);
+        int maxRetries = 3;
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                ExecutionResult<T> result;
+                if (transactionManager != null) {
+                    TransactionTemplate tmpl = new TransactionTemplate(transactionManager);
+                    tmpl.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    result = tmpl.execute(status -> executeInLockedTransaction(firstKey, secondKey, distinct, clientIp, normalizedEmail, action));
+                } else {
+                    synchronized (this) {
+                        result = executeInLockedTransaction(firstKey, secondKey, distinct, clientIp, normalizedEmail, action);
+                    }
+                }
+
+                if (result != null && result.exception != null) {
+                    throw result.exception;
+                }
+                return result != null ? result.value : null;
+            } catch (ConcurrencyFailureException ex) {
+                if (attempt == maxRetries - 1) {
+                    log.error("Exhausted concurrency retries for rate limit coordinator on IP {} / account {}", clientIp, normalizedEmail, ex);
+                    throw ex;
+                }
+                log.debug("Lock conflict or deadlock during rate limit coordination; retrying (attempt {})", attempt + 1);
+                try {
+                    Thread.sleep(10L * (attempt + 1));
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw ex;
+                }
             }
         }
-
-        if (result != null && result.exception != null) {
-            throw result.exception;
-        }
-        return result != null ? result.value : null;
+        return null;
     }
 
     private static class ExecutionResult<T> {
@@ -126,11 +145,8 @@ public class RecoveryRateLimiterService {
                                                               RateLimitedAction<T> action) {
         LocalDateTime now = LocalDateTime.now();
 
-        RateLimitCoordinator coord1 = coordinatorRepository.findByCoordinateKeyForUpdate(firstKey)
-                .orElseGet(() -> createCoordinatorRow(firstKey));
-        RateLimitCoordinator coord2 = distinct
-                ? coordinatorRepository.findByCoordinateKeyForUpdate(secondKey).orElseGet(() -> createCoordinatorRow(secondKey))
-                : coord1;
+        RateLimitCoordinator coord1 = getCoordinatorForUpdate(firstKey);
+        RateLimitCoordinator coord2 = distinct ? getCoordinatorForUpdate(secondKey) : coord1;
 
         // Check sliding window expiration and thresholds on both dimensions
         checkCoordinatorLimit(coord1, now);
@@ -191,20 +207,36 @@ public class RecoveryRateLimiterService {
     }
 
     private void ensureCoordinatorRowExists(String key) {
-        if (coordinatorRepository.findByCoordinateKey(key).isEmpty()) {
+        int maxRetries = 3;
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
+            if (coordinatorRepository.findByCoordinateKey(key).isPresent()) {
+                return;
+            }
             if (transactionManager != null) {
                 TransactionTemplate tmpl = new TransactionTemplate(transactionManager);
                 tmpl.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 try {
                     tmpl.executeWithoutResult(status -> createCoordinatorRowIfAbsent(key));
+                    return;
                 } catch (DataIntegrityViolationException ignored) {
                     // Row created concurrently by another instance
+                    return;
+                } catch (ConcurrencyFailureException ex) {
+                    log.debug("Lock conflict initializing coordinator key {}, retrying attempt {}", key, attempt + 1);
+                    try {
+                        Thread.sleep(5L * (attempt + 1));
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
                 }
             } else {
                 synchronized (this) {
                     try {
                         createCoordinatorRowIfAbsent(key);
+                        return;
                     } catch (DataIntegrityViolationException ignored) {
+                        return;
                     }
                 }
             }
@@ -213,19 +245,27 @@ public class RecoveryRateLimiterService {
 
     private RateLimitCoordinator createCoordinatorRowIfAbsent(String key) {
         return coordinatorRepository.findByCoordinateKey(key)
-                .orElseGet(() -> coordinatorRepository.save(RateLimitCoordinator.builder()
+                .orElseGet(() -> coordinatorRepository.saveAndFlush(RateLimitCoordinator.builder()
                         .coordinateKey(key)
                         .failedAttempts(0)
                         .updatedAt(LocalDateTime.now())
                         .build()));
     }
 
-    private RateLimitCoordinator createCoordinatorRow(String key) {
-        return coordinatorRepository.save(RateLimitCoordinator.builder()
-                .coordinateKey(key)
-                .failedAttempts(0)
-                .updatedAt(LocalDateTime.now())
-                .build());
+    private RateLimitCoordinator getCoordinatorForUpdate(String key) {
+        return coordinatorRepository.findByCoordinateKeyForUpdate(key)
+                .orElseGet(() -> {
+                    try {
+                        return coordinatorRepository.saveAndFlush(RateLimitCoordinator.builder()
+                                .coordinateKey(key)
+                                .failedAttempts(0)
+                                .updatedAt(LocalDateTime.now())
+                                .build());
+                    } catch (DataIntegrityViolationException ex) {
+                        return coordinatorRepository.findByCoordinateKeyForUpdate(key)
+                                .orElseThrow(() -> new IllegalStateException("Failed to load coordinator row for key: " + key));
+                    }
+                });
     }
 
     private void recordAuditLogEvent(String clientIp, String normalizedEmail, LocalDateTime now) {

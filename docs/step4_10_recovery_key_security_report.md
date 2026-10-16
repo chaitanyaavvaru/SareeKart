@@ -17,9 +17,9 @@ This report documents the completed implementation and empirical verification fo
 4. **Explicit Accounting Policy**: Only failed recovery verification attempts consume the 5-attempt/15-minute sliding window budget. Successful recovery key verification issues a reset token without penalizing the user. Attempt 6 onwards is blocked with HTTP 429 and `Retry-After: 900`.
 5. **Permanent Legacy Verifier Invalidation (`SEC-01` / `SEC-02`)**: Cleared legacy plaintext and static demo keys via data-only migration `V33`. In addition, runtime fail-safe invalidation in `UserServiceImpl` immediately purges non-BCrypt verifiers from persistent storage upon access (`reloadedUser.getRecoveryKeyHash() == null`), while preserving all unrelated user fields (`id`, `firstName`, `lastName`, `email`, `role`, `whatsappOptIn`, `password`).
 6. **Cross-Instance & Targeted Regression Verification**:
-   - `DistributedRecoveryRateLimiterIntegrationTest.java`: Verified 2 separate service instances sharing the database strictly enforce the 5-attempt ceiling under concurrent burst (`DISTRIBUTED-01`), permanently clear invalid stored verifiers (`DISTRIBUTED-02`), and successfully provision and single-use consume 128-bit keys (`DISTRIBUTED-03`).
-   - 47 targeted migration, security, and service tests passing cleanly.
-   - Full backend regression suite: **781 passed, 0 failures, 3 skipped**.
+   - `DistributedRecoveryRateLimiterIntegrationTest.java`: Verified 2 separate service instances sharing the database strictly enforce the 5-attempt ceiling under concurrent burst (`DISTRIBUTED-01`), permanently clear invalid stored verifiers (`DISTRIBUTED-02`), successfully provision and single-use consume 128-bit keys (`DISTRIBUTED-03`), and safely serialize first-ever concurrent requests when coordinator rows are initially absent with zero duplicate-key or deadlock errors escaping (`DISTRIBUTED-04`).
+   - 48 targeted migration, security, and service tests passing cleanly.
+   - Full backend regression suite: **782 passed, 0 failures, 3 skipped**.
    - Frontend test suite: **101 passed, 0 failures**, 0 ESLint errors, production bundle budget strictly preserved (max chunk 229 kB < 500 kB).
 
 ---
@@ -103,6 +103,12 @@ Coordinate keys use one-way SHA-256 hashes with dimension prefixes:
 - Account dimension: `acct:<sha256(normalized_email)>`
 Raw IP addresses, raw customer emails, recovery keys, and reset tokens are never written into `rate_limit_coordinators`.
 
+### First-Use Row Initialization & Conflict Resolution (Layer 1 + Layer 2 Concurrency Defense)
+When a source IP or target account is encountered for the first time, no row exists in `rate_limit_coordinators`. Because `SELECT ... FOR UPDATE` cannot serialize on rows that do not yet exist, concurrent initial requests could collide during `INSERT`:
+1. **Layer 1 Defense (`ensureCoordinatorRowExists`)**: Executes in an isolated `PROPAGATION_REQUIRES_NEW` transaction prior to entering the rate-limited block. If two concurrent requests attempt to insert the same key simultaneously, the unique index `uk_rate_limit_coordinate_key` catches the duplicate insertion (`DataIntegrityViolationException`), swallows it safely, and rolls back only the auxiliary transaction without invalidating the caller's main transaction. Transient lock contention or deadlocks during insert are handled with bounded retry (up to 3 attempts with exponential backoff).
+2. **Layer 2 Defense (`getCoordinatorForUpdate`)**: Inside `executeInLockedTransaction`, if a coordinator row is missing, row creation is safely attempted via `saveAndFlush`. If another instance committed the row concurrently, the duplicate-key error is absorbed and falls back to `findByCoordinateKeyForUpdate(key)`.
+3. **Transaction Boundary & Retry Semantics**: If any transient `ConcurrencyFailureException` occurs during locked execution, the service retries up to 3 times (10ms–30ms backoff). Because each retry re-locks the row and immediately verifies `coord.getFailedAttempts() < 5`, any attempts that fail during the burst immediately decrement the remaining quota, strictly preserving the 5-attempt budget.
+
 ---
 
 ## 2. Legacy Key Invalidation & Fail-Closed Purging
@@ -134,16 +140,17 @@ If a legacy, unhashed, or malformed verifier is encountered during verification:
 ### 1. Cross-Instance Integration Tests (`DistributedRecoveryRateLimiterIntegrationTest.java`)
 ```
 [INFO] Running com.sareekart.security.DistributedRecoveryRateLimiterIntegrationTest
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.079 s
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.256 s
 ```
-- `DISTRIBUTED-01`: Two separate service instances sharing the database concurrently process 12 requests. Combined, strictly 5 execute (HTTP 400) and 7 are throttled with HTTP 429 (`RateLimitExceededException`). The database coordination row reflects exactly 5 failures.
+- `DISTRIBUTED-01`: Two separate service instances sharing the database concurrently process 12 requests. Combined, strictly 5 execute (HTTP 400), 7 are throttled with HTTP 429 (`RateLimitExceededException`), and zero unexpected exceptions escape. The database coordination row reflects exactly 5 failures.
 - `DISTRIBUTED-02`: Plaintext legacy key (`SK-REC-LEGACY-PLAINTEXT-KEY-TO-PURGE`) is permanently purged (`null`) from persistent storage upon failure, while all unrelated fields (`id`, `firstName`, `lastName`, `email`, `role`, `whatsappOptIn`, `password`) remain intact.
 - `DISTRIBUTED-03`: End-to-end 128-bit key provisioning and atomic single-use consumption.
+- `DISTRIBUTED-04`: First-ever concurrent requests across two service instances with initially absent coordinator rows. 12 concurrent requests simultaneously contend on absent IP and account rows. Handled cleanly via bounded retry and duplicate-key absorption; exactly 5 attempts proceed to recovery verification (HTTP 400), exactly 7 are rejected with HTTP 429, exactly 0 unexpected exceptions escape, coordinator rows record 5 failures, and audit log records 5 failure entries.
 
 ### 2. Dedicated Security Test Suite (`EmergencyRecoverySecurityTest.java`)
 ```
 [INFO] Running com.sareekart.security.EmergencyRecoverySecurityTest
-[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.552 s
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.686 s
 ```
 - `SEC-01.1`–`SEC-01.3`: 128-bit cryptographic entropy, canonicalization, and zero JSON response leakage.
 - `SEC-02.1`–`SEC-02.6`: Static demo key rejection (`SK-REC-CUST-2026`, `SK-REC-ADMN-2026`), step-up password authentication, fail-closed corrupted hash rejection, user field preservation, V33 migration contract.
@@ -158,9 +165,9 @@ If a legacy, unhashed, or malformed verifier is encountered during verification:
 ### 4. Full Backend Regression Suite
 ```
 [INFO] Results:
-[INFO] Tests run: 781, Failures: 0, Errors: 0, Skipped: 3
+[INFO] Tests run: 782, Failures: 0, Errors: 0, Skipped: 3
 [INFO] BUILD SUCCESS
-[INFO] Total time: 01:21 min
+[INFO] Total time: 01:27 min
 ```
 
 ### 5. Frontend Quality & Bundle Budget
@@ -175,23 +182,24 @@ If a legacy, unhashed, or malformed verifier is encountered during verification:
 
 ---
 
-## 4. Modified & Untracked Files
+## 4. Git Commit Structure & File Inventory
 
-### Modified Files in Working Tree:
+### Base Security Commit `dc3d93e` (`security(auth): enforce distributed recovery rate limiting`)
+- [`V33__invalidate_legacy_recovery_keys.sql`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/resources/db/migration/V33__invalidate_legacy_recovery_keys.sql)
+- [`V34__create_rate_limit_coordinators.sql`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/resources/db/migration/V34__create_rate_limit_coordinators.sql)
+- [`RateLimitCoordinator.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/java/com/sareekart/entity/RateLimitCoordinator.java)
+- [`RateLimitCoordinatorRepository.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/java/com/sareekart/repository/RateLimitCoordinatorRepository.java)
 - [`AuthController.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/java/com/sareekart/controller/AuthController.java)
-- [`RecoveryRateLimiterService.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/java/com/sareekart/security/RecoveryRateLimiterService.java)
 - [`UserServiceImpl.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/java/com/sareekart/service/impl/UserServiceImpl.java)
 - [`TiDbCleanRoomSchemaParityTest.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/test/java/com/sareekart/migration/TiDbCleanRoomSchemaParityTest.java)
 - [`TiDbEmpiricalChallengerTest.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/test/java/com/sareekart/migration/TiDbEmpiricalChallengerTest.java)
-- [`EmergencyRecoverySecurityTest.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/test/java/com/sareekart/security/EmergencyRecoverySecurityTest.java)
 - [`UserServicePasswordResetTest.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/test/java/com/sareekart/service/UserServicePasswordResetTest.java)
 
-### Untracked Files:
-- [`RateLimitCoordinator.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/java/com/sareekart/entity/RateLimitCoordinator.java)
-- [`RateLimitCoordinatorRepository.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/java/com/sareekart/repository/RateLimitCoordinatorRepository.java)
-- [`V33__invalidate_legacy_recovery_keys.sql`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/resources/db/migration/V33__invalidate_legacy_recovery_keys.sql)
-- [`V34__create_rate_limit_coordinators.sql`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/resources/db/migration/V34__create_rate_limit_coordinators.sql)
+### Follow-Up Concurrency Hardening Commit (`fix(auth): harden first-use recovery rate limit coordination`)
+- [`RecoveryRateLimiterService.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/main/java/com/sareekart/security/RecoveryRateLimiterService.java)
 - [`DistributedRecoveryRateLimiterIntegrationTest.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/test/java/com/sareekart/security/DistributedRecoveryRateLimiterIntegrationTest.java)
+- [`EmergencyRecoverySecurityTest.java`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/backend/backend/src/test/java/com/sareekart/security/EmergencyRecoverySecurityTest.java)
+- [`step4_10_recovery_key_security_report.md`](file:///Users/chaitanyachaitu/Downloads/SareeKart-main/docs/step4_10_recovery_key_security_report.md)
 
 ---
 

@@ -103,6 +103,14 @@ class EmergencyRecoverySecurityTest {
             coordinatorStore.put(c.getCoordinateKey(), c);
             return c;
         });
+        lenient().when(coordinatorRepository.saveAndFlush(any(RateLimitCoordinator.class))).thenAnswer(inv -> {
+            RateLimitCoordinator c = inv.getArgument(0);
+            if (c.getId() == null) {
+                c.setId((long) (coordinatorStore.size() + 1));
+            }
+            coordinatorStore.put(c.getCoordinateKey(), c);
+            return c;
+        });
 
         testUser = User.builder()
                 .id(42L)
