@@ -105,22 +105,19 @@ public class AuthController {
         String clientIp = recoveryRateLimiterService != null ? recoveryRateLimiterService.resolveClientIp(httpRequest) : "UNKNOWN";
         String normalizedEmail = request.getEmail() != null ? request.getEmail().trim().toLowerCase(Locale.ROOT) : "";
 
+        String token;
         if (recoveryRateLimiterService != null) {
-            recoveryRateLimiterService.checkRateLimit(clientIp, normalizedEmail);
+            token = recoveryRateLimiterService.executeWithRateLimit(clientIp, normalizedEmail, () ->
+                    userService.verifyRecoveryKeyAndGenerateResetToken(request.getEmail(), request.getRecoveryKey())
+            );
+        } else {
+            token = userService.verifyRecoveryKeyAndGenerateResetToken(request.getEmail(), request.getRecoveryKey());
         }
 
-        try {
-            String token = userService.verifyRecoveryKeyAndGenerateResetToken(request.getEmail(), request.getRecoveryKey());
-            Map<String, String> data = new HashMap<>();
-            data.put("resetToken", token);
-            data.put("resetUrl", frontendUrl + "/reset-password?token=" + token);
-            return ResponseEntity.ok(ApiResponse.success("Emergency Security Recovery Key verified successfully.", data));
-        } catch (BadRequestException ex) {
-            if (recoveryRateLimiterService != null) {
-                recoveryRateLimiterService.recordFailedAttempt(clientIp, normalizedEmail);
-            }
-            throw ex;
-        }
+        Map<String, String> data = new HashMap<>();
+        data.put("resetToken", token);
+        data.put("resetUrl", frontendUrl + "/reset-password?token=" + token);
+        return ResponseEntity.ok(ApiResponse.success("Emergency Security Recovery Key verified successfully.", data));
     }
 
     @PostMapping("/generate-recovery-key")

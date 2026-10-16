@@ -264,7 +264,7 @@ class UserServicePasswordResetTest {
     void verifyRecoveryKeyAndGenerateResetToken_neverLogsRawTokenOrEmail() {
         String testKey = "SK-A1B2-C3D4-E5F6-7890-ABCD-EF01-2345-6789";
         String canonicalKey = com.sareekart.security.RecoveryKeyUtil.canonicalize(testKey);
-        String testHash = "$2a$10$hashedVerifierForPriyaSharmaTest1234567890";
+        String testHash = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode(canonicalKey);
         sampleUser.setRecoveryKeyHash(testHash);
 
         Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
@@ -282,7 +282,7 @@ class UserServicePasswordResetTest {
             assertNotNull(token);
             assertFalse(token.isBlank());
             assertNull(sampleUser.getRecoveryKeyHash(), "Recovery key verifier must be atomically consumed");
-            verify(userRepository).save(sampleUser);
+            verify(userRepository).saveAndFlush(sampleUser);
             verify(auditLogRepository).save(any(com.sareekart.entity.AuditLog.class));
 
             for (ILoggingEvent event : listAppender.list) {

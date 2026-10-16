@@ -52,6 +52,7 @@ public class TiDbEmpiricalChallengerTest {
         "pincode_overrides",
         "product_images",
         "products",
+        "rate_limit_coordinators",
         "return_requests",
         "reviews",
         "stock_transfers",
@@ -130,12 +131,12 @@ public class TiDbEmpiricalChallengerTest {
 
         int migrationsApplied = flyway.migrate().migrationsExecuted;
         assertThat(migrationsApplied)
-                .withFailMessage("Flyway must apply all 17 migrations from clean-room")
-                .isEqualTo(17);
+                .withFailMessage("Flyway must apply all 19 migrations from clean-room")
+                .isEqualTo(19);
 
         MigrationInfoService infoService = flyway.info();
         MigrationInfo[] applied = infoService.applied();
-        assertThat(applied).hasSize(17);
+        assertThat(applied).hasSize(19);
 
         for (MigrationInfo info : applied) {
             assertThat(info.getState())
@@ -146,7 +147,7 @@ public class TiDbEmpiricalChallengerTest {
 
     @Test
     @Order(2)
-    @DisplayName("Challenger Test 2: Direct SQL verification of exactly 37 tables and 368 columns")
+    @DisplayName("Challenger Test 2: Direct SQL verification of exactly 38 tables and 374 columns")
     void testDirectSqlTableAndColumnCounts() throws Exception {
         try (Connection conn = DriverManager.getConnection(targetUrl, dbUser, dbPass);
              Statement stmt = conn.createStatement()) {
@@ -161,8 +162,8 @@ public class TiDbEmpiricalChallengerTest {
             }
 
             assertThat(actualTables)
-                    .withFailMessage("Direct query must find strictly 37 tables")
-                    .hasSize(37);
+                    .withFailMessage("Direct query must find strictly 38 tables")
+                    .hasSize(38);
             assertThat(actualTables)
                     .withFailMessage("Direct query table catalog mismatch")
                     .containsExactlyInAnyOrderElementsOf(EXPECTED_TABLES);
@@ -177,8 +178,8 @@ public class TiDbEmpiricalChallengerTest {
             }
 
             assertThat(columnCount)
-                    .withFailMessage("Direct query must find strictly 368 columns across 37 tables, found %d", columnCount)
-                    .isEqualTo(368);
+                    .withFailMessage("Direct query must find strictly 374 columns across 38 tables, found %d", columnCount)
+                    .isEqualTo(374);
         }
     }
 
@@ -207,14 +208,14 @@ public class TiDbEmpiricalChallengerTest {
             }
 
             assertThat(totalRows)
-                    .withFailMessage("Expected exactly 17 entries in flyway_schema_history")
-                    .isEqualTo(17);
+                    .withFailMessage("Expected exactly 19 entries in flyway_schema_history")
+                    .isEqualTo(19);
             assertThat(successfulRows)
-                    .withFailMessage("All 17 entries in flyway_schema_history must have success=1")
-                    .isEqualTo(17);
+                    .withFailMessage("All 19 entries in flyway_schema_history must have success=1")
+                    .isEqualTo(19);
 
             List<String> expectedVersions = List.of(
-                "1", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32"
+                "1", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34"
             );
             assertThat(recordedVersions).containsExactlyElementsOf(expectedVersions);
         }

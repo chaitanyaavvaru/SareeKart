@@ -15,6 +15,8 @@ import com.sareekart.exception.RateLimitExceededException;
 import com.sareekart.repository.AuditLogRepository;
 import com.sareekart.repository.PasswordResetTokenRepository;
 import com.sareekart.repository.UserRepository;
+import com.sareekart.entity.RateLimitCoordinator;
+import com.sareekart.repository.RateLimitCoordinatorRepository;
 import com.sareekart.service.UserService;
 import com.sareekart.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +52,7 @@ class EmergencyRecoverySecurityTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final PasswordEncoder realPasswordEncoder = new BCryptPasswordEncoder();
+    private final Map<String, RateLimitCoordinator> coordinatorStore = new ConcurrentHashMap<>();
 
     @Mock
     private UserRepository userRepository;
@@ -66,6 +69,9 @@ class EmergencyRecoverySecurityTest {
     @Mock
     private JwtTokenProvider tokenProvider;
 
+    @Mock
+    private RateLimitCoordinatorRepository coordinatorRepository;
+
     private UserServiceImpl userService;
     private RecoveryRateLimiterService rateLimiterService;
     private AuthController authController;
@@ -79,6 +85,24 @@ class EmergencyRecoverySecurityTest {
     void setUp() {
         testPlainPassword = "SecurePassword2026!";
         testHashedPassword = realPasswordEncoder.encode(testPlainPassword);
+
+        coordinatorStore.clear();
+        lenient().when(coordinatorRepository.findByCoordinateKey(anyString())).thenAnswer(inv -> {
+            String key = inv.getArgument(0);
+            return Optional.ofNullable(coordinatorStore.get(key));
+        });
+        lenient().when(coordinatorRepository.findByCoordinateKeyForUpdate(anyString())).thenAnswer(inv -> {
+            String key = inv.getArgument(0);
+            return Optional.ofNullable(coordinatorStore.get(key));
+        });
+        lenient().when(coordinatorRepository.save(any(RateLimitCoordinator.class))).thenAnswer(inv -> {
+            RateLimitCoordinator c = inv.getArgument(0);
+            if (c.getId() == null) {
+                c.setId((long) (coordinatorStore.size() + 1));
+            }
+            coordinatorStore.put(c.getCoordinateKey(), c);
+            return c;
+        });
 
         testUser = User.builder()
                 .id(42L)
@@ -98,7 +122,7 @@ class EmergencyRecoverySecurityTest {
                 auditLogRepository
         );
 
-        rateLimiterService = new RecoveryRateLimiterService(auditLogRepository);
+        rateLimiterService = new RecoveryRateLimiterService(coordinatorRepository, auditLogRepository, null);
         authController = new AuthController(userService, rateLimiterService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(authController)
@@ -217,6 +241,75 @@ class EmergencyRecoverySecurityTest {
         assertEquals(testUser.getId().toString(), savedLog.getEntityId());
     }
 
+    @Test
+    @DisplayName("SEC-02.3: Stored legacy plaintext recovery key is safely invalidated without unhandled exception")
+    void testLegacyPlaintextVerifierRejectedAndSafelyInvalidatedWithoutUnhandledException() {
+        testUser.setRecoveryKeyHash("SK-REC-LEGACY-PLAINTEXT-KEY");
+        when(userRepository.findByEmailForUpdate(testUser.getEmail())).thenReturn(Optional.of(testUser));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () ->
+                userService.verifyRecoveryKeyAndGenerateResetToken(testUser.getEmail(), RecoveryKeyUtil.generateRecoveryKey())
+        );
+
+        assertEquals("Invalid recovery details provided.", ex.getMessage());
+        assertNull(testUser.getRecoveryKeyHash(), "Legacy plaintext verifier must be purged from user entity");
+        verify(userRepository).saveAndFlush(testUser);
+        verify(passwordResetTokenRepository, never()).save(any(PasswordResetToken.class));
+    }
+
+    @Test
+    @DisplayName("SEC-02.4: Corrupted or malformed hash verifier fails closed without unhandled exception")
+    void testCorruptedHashSafelyRejectedWithoutUnhandledException() {
+        testUser.setRecoveryKeyHash("$2a$10$InvalidBcryptCharactersThatBreakDecoding$%^&*()ABCDEF123456");
+        when(userRepository.findByEmailForUpdate(testUser.getEmail())).thenReturn(Optional.of(testUser));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () ->
+                userService.verifyRecoveryKeyAndGenerateResetToken(testUser.getEmail(), RecoveryKeyUtil.generateRecoveryKey())
+        );
+
+        assertEquals("Invalid recovery details provided.", ex.getMessage());
+        assertNull(testUser.getRecoveryKeyHash(), "Malformed verifier must be purged");
+        verify(userRepository).saveAndFlush(testUser);
+    }
+
+    @Test
+    @DisplayName("SEC-02.5: Legacy recovery key invalidation preserves all unrelated user fields")
+    void testLegacyKeyInvalidationPreservesUnrelatedUserFields() {
+        testUser.setRecoveryKeyHash("SK-REC-OLD-DEMO");
+        when(userRepository.findByEmailForUpdate(testUser.getEmail())).thenReturn(Optional.of(testUser));
+
+        assertThrows(BadRequestException.class, () ->
+                userService.verifyRecoveryKeyAndGenerateResetToken(testUser.getEmail(), RecoveryKeyUtil.generateRecoveryKey())
+        );
+
+        // Verify recovery key is nullified
+        assertNull(testUser.getRecoveryKeyHash());
+
+        // Verify all other user fields remain completely unmodified
+        assertEquals(42L, testUser.getId());
+        assertEquals("Radha", testUser.getFirstName());
+        assertEquals("Devi", testUser.getLastName());
+        assertEquals("radha@sareekart.com", testUser.getEmail());
+        assertEquals(testHashedPassword, testUser.getPassword());
+        assertEquals(Role.CUSTOMER, testUser.getRole());
+        assertTrue(testUser.getWhatsappOptIn());
+    }
+
+    @Test
+    @DisplayName("SEC-02.6: Migration V33 script syntax and data-only execution contract")
+    void testMigrationV33ScriptContract() throws Exception {
+        try (var in = getClass().getResourceAsStream("/db/migration/V33__invalidate_legacy_recovery_keys.sql")) {
+            assertNotNull(in, "Migration V33 script must exist in classpath:db/migration");
+            String sql = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(sql.contains("UPDATE `users`"), "Migration must update users table");
+            assertTrue(sql.contains("SET `recovery_key` = NULL"), "Migration must clear recovery_key column");
+            assertFalse(sql.toUpperCase().contains("DROP TABLE"), "Data migration must not drop any table");
+            assertFalse(sql.toUpperCase().contains("DELETE FROM"), "Data migration must not delete any user accounts");
+            assertFalse(sql.toUpperCase().contains("ALTER TABLE"), "Data migration must not alter table schema");
+        }
+    }
+
     // =========================================================================
     // SEC-03: Single-Use Consumption, Rate Limiting & Concurrency Safety
     // =========================================================================
@@ -238,7 +331,7 @@ class EmergencyRecoverySecurityTest {
 
         // Assert atomic consumption: hash in user entity is now null
         assertNull(testUser.getRecoveryKeyHash(), "Recovery key verifier must be nullified immediately");
-        verify(userRepository).save(testUser);
+        verify(userRepository).saveAndFlush(testUser);
         verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
 
         // Replay attempt with same key must fail immediately closed
@@ -280,17 +373,30 @@ class EmergencyRecoverySecurityTest {
         String clientIp = "198.51.100.25";
         String account = "victim@sareekart.com";
 
-        // Under limit (4 failures): no exception
-        when(auditLogRepository.countByActionAndIpAddressAndCreatedAtAfter(eq("RECOVERY_VERIFICATION_FAILED"), eq(clientIp), any()))
-                .thenReturn(4L);
-        when(auditLogRepository.countByActionAndEntityIdAndCreatedAtAfter(eq("RECOVERY_VERIFICATION_FAILED"), eq(account), any()))
-                .thenReturn(4L);
+        String ipKey = RecoveryRateLimiterService.computeCoordinateKey("ip", clientIp);
+        String acctKey = RecoveryRateLimiterService.computeCoordinateKey("acct", account);
+
+        RateLimitCoordinator ipCoord = RateLimitCoordinator.builder()
+                .coordinateKey(ipKey)
+                .failedAttempts(4)
+                .firstFailureAt(LocalDateTime.now())
+                .lastFailureAt(LocalDateTime.now())
+                .build();
+
+        RateLimitCoordinator acctCoord = RateLimitCoordinator.builder()
+                .coordinateKey(acctKey)
+                .failedAttempts(4)
+                .firstFailureAt(LocalDateTime.now())
+                .lastFailureAt(LocalDateTime.now())
+                .build();
+
+        coordinatorStore.put(ipKey, ipCoord);
+        coordinatorStore.put(acctKey, acctCoord);
 
         assertDoesNotThrow(() -> rateLimiterService.checkRateLimit(clientIp, account));
 
         // At/over limit by IP (5 failures): throws RateLimitExceededException
-        when(auditLogRepository.countByActionAndIpAddressAndCreatedAtAfter(eq("RECOVERY_VERIFICATION_FAILED"), eq(clientIp), any()))
-                .thenReturn(5L);
+        ipCoord.setFailedAttempts(5);
 
         RateLimitExceededException ipEx = assertThrows(RateLimitExceededException.class, () ->
                 rateLimiterService.checkRateLimit(clientIp, account)
@@ -299,10 +405,8 @@ class EmergencyRecoverySecurityTest {
         assertTrue(ipEx.getMessage().contains("IP address"));
 
         // At/over limit by Account (5 failures): throws RateLimitExceededException
-        when(auditLogRepository.countByActionAndIpAddressAndCreatedAtAfter(eq("RECOVERY_VERIFICATION_FAILED"), eq(clientIp), any()))
-                .thenReturn(0L);
-        when(auditLogRepository.countByActionAndEntityIdAndCreatedAtAfter(eq("RECOVERY_VERIFICATION_FAILED"), eq(account), any()))
-                .thenReturn(5L);
+        ipCoord.setFailedAttempts(0);
+        acctCoord.setFailedAttempts(5);
 
         RateLimitExceededException acctEx = assertThrows(RateLimitExceededException.class, () ->
                 rateLimiterService.checkRateLimit(clientIp, account)
@@ -317,8 +421,14 @@ class EmergencyRecoverySecurityTest {
         String clientIp = "203.0.113.195";
         String email = "radha@sareekart.com";
 
-        when(auditLogRepository.countByActionAndIpAddressAndCreatedAtAfter(eq("RECOVERY_VERIFICATION_FAILED"), eq(clientIp), any()))
-                .thenReturn(5L);
+        String ipKey = RecoveryRateLimiterService.computeCoordinateKey("ip", clientIp);
+        RateLimitCoordinator ipCoord = RateLimitCoordinator.builder()
+                .coordinateKey(ipKey)
+                .failedAttempts(5)
+                .firstFailureAt(LocalDateTime.now())
+                .lastFailureAt(LocalDateTime.now())
+                .build();
+        coordinatorStore.put(ipKey, ipCoord);
 
         VerifyRecoveryKeyRequest req = VerifyRecoveryKeyRequest.builder()
                 .email(email)
@@ -344,8 +454,6 @@ class EmergencyRecoverySecurityTest {
         String clientIp = "192.0.2.77";
         String email = "target@sareekart.com";
 
-        when(auditLogRepository.countByActionAndIpAddressAndCreatedAtAfter(any(), any(), any())).thenReturn(0L);
-        when(auditLogRepository.countByActionAndEntityIdAndCreatedAtAfter(any(), any(), any())).thenReturn(0L);
         when(userRepository.findByEmailForUpdate(email)).thenReturn(Optional.empty());
 
         VerifyRecoveryKeyRequest req = VerifyRecoveryKeyRequest.builder()
@@ -437,5 +545,165 @@ class EmergencyRecoverySecurityTest {
         assertEquals(1, successCount.get(), "Exactly 1 thread must succeed in consuming the recovery key");
         assertEquals(threadCount - 1, failureCount.get(), "Competing threads must fail closed");
         assertNull(testUser.getRecoveryKeyHash(), "Key verifier must be nullified");
+    }
+
+    @Test
+    @DisplayName("SEC-03.8: Concurrency test: 12 concurrent requests from SAME IP — exactly 5 attempts proceed, 7 blocked with 429")
+    void testConcurrentRateLimitingEnforcementBySourceIp() throws Exception {
+        String clientIp = "198.51.100.88";
+        int totalThreads = 12;
+
+        AtomicInteger recordedFailures = new AtomicInteger(0);
+        when(auditLogRepository.save(any(AuditLog.class))).thenAnswer(inv -> {
+            recordedFailures.incrementAndGet();
+            return inv.getArgument(0);
+        });
+
+        // Non-existent users so every attempt is invalid (throws BadRequestException)
+        when(userRepository.findByEmailForUpdate(anyString())).thenReturn(Optional.empty());
+
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        AtomicInteger badRequestCount = new AtomicInteger(0);
+        AtomicInteger rateLimitExceededCount = new AtomicInteger(0);
+
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < totalThreads; i++) {
+            final String distinctEmail = "victim" + i + "@sareekart.com";
+            futures.add(executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    rateLimiterService.executeWithRateLimit(clientIp, distinctEmail, () ->
+                            userService.verifyRecoveryKeyAndGenerateResetToken(distinctEmail, RecoveryKeyUtil.generateRecoveryKey())
+                    );
+                } catch (BadRequestException e) {
+                    badRequestCount.incrementAndGet();
+                } catch (RateLimitExceededException e) {
+                    rateLimitExceededCount.incrementAndGet();
+                } catch (Exception ignored) {
+                }
+            }));
+        }
+
+        // Release all threads simultaneously for concurrent burst
+        startLatch.countDown();
+        for (Future<?> f : futures) {
+            f.get(5, TimeUnit.SECONDS);
+        }
+        executor.shutdown();
+
+        // Must permit strictly MAX_FAILED_ATTEMPTS (5) and throttle the rest (7)
+        assertEquals(5, badRequestCount.get(), "Strictly 5 requests must execute before being throttled");
+        assertEquals(7, rateLimitExceededCount.get(), "Remaining 7 concurrent requests must be rejected with RateLimitExceededException");
+        assertEquals(5, recordedFailures.get(), "Audit log must record exactly 5 failed attempts");
+    }
+
+    @Test
+    @DisplayName("SEC-03.9: Concurrency test: 12 concurrent requests against SAME ACCOUNT — exactly 5 attempts proceed, 7 blocked with 429")
+    void testConcurrentRateLimitingEnforcementByAccount() throws Exception {
+        String targetAccount = "high-value-target@sareekart.com";
+        int totalThreads = 12;
+
+        AtomicInteger recordedFailures = new AtomicInteger(0);
+        when(auditLogRepository.save(any(AuditLog.class))).thenAnswer(inv -> {
+            recordedFailures.incrementAndGet();
+            return inv.getArgument(0);
+        });
+
+        when(userRepository.findByEmailForUpdate(eq(targetAccount))).thenReturn(Optional.empty());
+
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        AtomicInteger badRequestCount = new AtomicInteger(0);
+        AtomicInteger rateLimitExceededCount = new AtomicInteger(0);
+
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < totalThreads; i++) {
+            final String distinctIp = "198.51.100." + (10 + i);
+            futures.add(executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    rateLimiterService.executeWithRateLimit(distinctIp, targetAccount, () ->
+                            userService.verifyRecoveryKeyAndGenerateResetToken(targetAccount, RecoveryKeyUtil.generateRecoveryKey())
+                    );
+                } catch (BadRequestException e) {
+                    badRequestCount.incrementAndGet();
+                } catch (RateLimitExceededException e) {
+                    rateLimitExceededCount.incrementAndGet();
+                } catch (Exception ignored) {
+                }
+            }));
+        }
+
+        // Release all threads simultaneously for concurrent burst
+        startLatch.countDown();
+        for (Future<?> f : futures) {
+            f.get(5, TimeUnit.SECONDS);
+        }
+        executor.shutdown();
+
+        // Must permit strictly MAX_FAILED_ATTEMPTS (5) and throttle the rest (7)
+        assertEquals(5, badRequestCount.get(), "Strictly 5 requests must execute before being throttled");
+        assertEquals(7, rateLimitExceededCount.get(), "Remaining 7 concurrent requests must be rejected with RateLimitExceededException");
+        assertEquals(5, recordedFailures.get(), "Audit log must record exactly 5 failed attempts");
+    }
+
+    @Test
+    @DisplayName("SEC-03.10: Concurrency test: Controller endpoint /api/auth/verify-recovery-key throttles concurrent burst with HTTP 429")
+    void testConcurrentControllerRateLimitingBurst() throws Exception {
+        String clientIp = "203.0.113.88";
+        String account = "victim-endpoint@sareekart.com";
+        int totalThreads = 10;
+
+        AtomicInteger recordedFailures = new AtomicInteger(0);
+        when(auditLogRepository.save(any(AuditLog.class))).thenAnswer(inv -> {
+            recordedFailures.incrementAndGet();
+            return inv.getArgument(0);
+        });
+        when(userRepository.findByEmailForUpdate(eq(account))).thenReturn(Optional.empty());
+
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        AtomicInteger status400Count = new AtomicInteger(0);
+        AtomicInteger status429Count = new AtomicInteger(0);
+
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < totalThreads; i++) {
+            futures.add(executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    VerifyRecoveryKeyRequest req = VerifyRecoveryKeyRequest.builder()
+                            .email(account)
+                            .recoveryKey(RecoveryKeyUtil.generateRecoveryKey())
+                            .build();
+
+                    var result = mockMvc.perform(post("/api/auth/verify-recovery-key")
+                                    .with(request -> {
+                                        request.setRemoteAddr(clientIp);
+                                        return request;
+                                    })
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(req)))
+                            .andReturn();
+
+                    int status = result.getResponse().getStatus();
+                    if (status == 400) {
+                        status400Count.incrementAndGet();
+                    } else if (status == 429) {
+                        status429Count.incrementAndGet();
+                    }
+                } catch (Exception ignored) {
+                }
+            }));
+        }
+
+        startLatch.countDown();
+        for (Future<?> f : futures) {
+            f.get(5, TimeUnit.SECONDS);
+        }
+        executor.shutdown();
+
+        assertEquals(5, status400Count.get(), "Controller must return HTTP 400 for first 5 attempts");
+        assertEquals(5, status429Count.get(), "Controller must return HTTP 429 for remaining 5 concurrent requests");
     }
 }

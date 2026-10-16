@@ -47,6 +47,7 @@ public class TiDbCleanRoomSchemaParityTest {
         "pincode_overrides",
         "product_images",
         "products",
+        "rate_limit_coordinators",
         "return_requests",
         "reviews",
         "stock_transfers",
@@ -127,7 +128,7 @@ public class TiDbCleanRoomSchemaParityTest {
 
     @Test
     @Order(1)
-    @DisplayName("R1.1: Verify Flyway clean-room migration executes all 17 migrations (V1, V17-V32) with status SUCCESS")
+    @DisplayName("R1.1: Verify Flyway clean-room migration executes all 19 migrations (V1, V17-V34) with status SUCCESS")
     void testFlywayCleanRoomMigrationExecution() {
         Flyway flyway = Flyway.configure()
                 .dataSource(targetUrl, dbUser, dbPass)
@@ -142,8 +143,8 @@ public class TiDbCleanRoomSchemaParityTest {
         MigrationInfoService infoService = flyway.info();
         MigrationInfo[] applied = infoService.applied();
         assertThat(applied)
-                .withFailMessage("Expected exactly 17 migrations in Flyway history")
-                .hasSize(17);
+                .withFailMessage("Expected exactly 19 migrations in Flyway history")
+                .hasSize(19);
 
         List<String> versions = new ArrayList<>();
         for (MigrationInfo info : applied) {
@@ -154,14 +155,14 @@ public class TiDbCleanRoomSchemaParityTest {
         }
 
         List<String> expectedVersions = List.of(
-            "1", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32"
+            "1", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34"
         );
         assertThat(versions).containsExactlyElementsOf(expectedVersions);
     }
 
     @Test
     @Order(2)
-    @DisplayName("R1.2: Verify 100% schema parity across all 37 application tables")
+    @DisplayName("R1.2: Verify 100% schema parity across all 38 application tables")
     void testThirtySevenApplicationTablesParity() throws Exception {
         try (Connection conn = DriverManager.getConnection(targetUrl, dbUser, dbPass);
              Statement stmt = conn.createStatement()) {
@@ -176,8 +177,8 @@ public class TiDbCleanRoomSchemaParityTest {
             }
 
             assertThat(actualTables)
-                    .withFailMessage("Expected exactly 37 application tables")
-                    .hasSize(37);
+                    .withFailMessage("Expected exactly 38 application tables")
+                    .hasSize(38);
             assertThat(actualTables)
                     .withFailMessage("Table names do not match expected schema catalog")
                     .containsExactlyInAnyOrderElementsOf(EXPECTED_TABLES);
@@ -186,7 +187,7 @@ public class TiDbCleanRoomSchemaParityTest {
 
     @Test
     @Order(3)
-    @DisplayName("R1.3: Verify 100% schema parity across all 368 application columns")
+    @DisplayName("R1.3: Verify 100% schema parity across all 374 application columns")
     void testThreeHundredSixtyEightColumnsParity() throws Exception {
         try (Connection conn = DriverManager.getConnection(targetUrl, dbUser, dbPass);
              Statement stmt = conn.createStatement()) {
@@ -201,8 +202,8 @@ public class TiDbCleanRoomSchemaParityTest {
             }
 
             assertThat(columnCount)
-                    .withFailMessage("Expected exactly 368 columns across all 37 application tables, found " + columnCount)
-                    .isEqualTo(368);
+                    .withFailMessage("Expected exactly 374 columns across all 38 application tables, found " + columnCount)
+                    .isEqualTo(374);
         }
     }
 

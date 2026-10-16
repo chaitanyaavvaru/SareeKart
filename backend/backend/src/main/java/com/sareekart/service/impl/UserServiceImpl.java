@@ -193,6 +193,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(noRollbackFor = BadRequestException.class)
     public String verifyRecoveryKeyAndGenerateResetToken(String email, String recoveryKey) {
         if (email == null || email.isBlank() || recoveryKey == null || recoveryKey.isBlank()) {
             throw new BadRequestException("Invalid recovery details provided.");
@@ -216,18 +217,37 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmailForUpdate(normalizedEmail)
                 .orElseThrow(() -> new BadRequestException("Invalid recovery details provided."));
 
-        if (user.getRecoveryKeyHash() == null || user.getRecoveryKeyHash().isBlank()) {
+        String storedHash = user.getRecoveryKeyHash();
+        if (storedHash == null || storedHash.isBlank()) {
+            throw new BadRequestException("Invalid recovery details provided.");
+        }
+
+        // Defend against legacy plaintext or malformed verifiers in persistent storage
+        if (!isBcryptHash(storedHash)) {
+            log.warn("Stored recovery verifier is legacy plaintext or malformed; safely invalidating in persistent storage");
+            user.setRecoveryKeyHash(null);
+            userRepository.saveAndFlush(user);
             throw new BadRequestException("Invalid recovery details provided.");
         }
 
         String canonicalCandidate = RecoveryKeyUtil.canonicalize(cleanKey);
-        if (!passwordEncoder.matches(canonicalCandidate, user.getRecoveryKeyHash())) {
+        boolean matches;
+        try {
+            matches = passwordEncoder.matches(canonicalCandidate, storedHash);
+        } catch (Exception ex) {
+            log.warn("BCrypt verification exception encountered for recovery verifier: {}", ex.getMessage());
+            user.setRecoveryKeyHash(null);
+            userRepository.saveAndFlush(user);
+            throw new BadRequestException("Invalid recovery details provided.");
+        }
+
+        if (!matches) {
             throw new BadRequestException("Invalid recovery details provided.");
         }
 
         // Atomic single-use consumption: clear the recovery key verifier immediately (SEC-03)
         user.setRecoveryKeyHash(null);
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
 
         // Invalidate old active tokens for this user
         List<PasswordResetToken> oldTokens = passwordResetTokenRepository.findAllByUserAndUsedFalse(user);
@@ -302,5 +322,15 @@ public class UserServiceImpl implements UserService {
                 .recoveryKey(rawKey)
                 .message("Store this emergency recovery key securely. It will not be shown again.")
                 .build();
+    }
+
+    private static final java.util.regex.Pattern BCRYPT_PATTERN =
+            java.util.regex.Pattern.compile("^\\$2[aby]?\\$\\d{2}\\$[./A-Za-z0-9]{53}$");
+
+    private boolean isBcryptHash(String hash) {
+        if (hash == null || hash.isBlank()) {
+            return false;
+        }
+        return BCRYPT_PATTERN.matcher(hash.trim()).matches();
     }
 }
