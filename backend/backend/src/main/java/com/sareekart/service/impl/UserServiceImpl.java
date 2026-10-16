@@ -3,14 +3,18 @@ package com.sareekart.service.impl;
 import com.sareekart.dto.request.LoginRequest;
 import com.sareekart.dto.request.RegisterRequest;
 import com.sareekart.dto.response.AuthResponse;
+import com.sareekart.dto.response.RecoveryKeyResponse;
+import com.sareekart.entity.AuditLog;
 import com.sareekart.entity.PasswordResetToken;
 import com.sareekart.entity.Role;
 import com.sareekart.entity.User;
 import com.sareekart.exception.BadRequestException;
 import com.sareekart.exception.ResourceNotFoundException;
+import com.sareekart.repository.AuditLogRepository;
 import com.sareekart.repository.PasswordResetTokenRepository;
 import com.sareekart.repository.UserRepository;
 import com.sareekart.security.JwtTokenProvider;
+import com.sareekart.security.RecoveryKeyUtil;
 import com.sareekart.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +43,7 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final AuditLogRepository auditLogRepository;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -189,31 +194,40 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String verifyRecoveryKeyAndGenerateResetToken(String email, String recoveryKey) {
-        if (email == null || email.isBlank()) {
-            throw new BadRequestException("Email cannot be empty.");
-        }
-        if (recoveryKey == null || recoveryKey.isBlank()) {
-            throw new BadRequestException("Recovery key cannot be empty.");
+        if (email == null || email.isBlank() || recoveryKey == null || recoveryKey.isBlank()) {
+            throw new BadRequestException("Invalid recovery details provided.");
         }
 
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
-        User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new BadRequestException("Invalid recovery details provided."));
-
         String cleanKey = recoveryKey.trim().toUpperCase(Locale.ROOT);
 
-        boolean matches = false;
-        if (user.getRecoveryKey() != null && user.getRecoveryKey().equalsIgnoreCase(cleanKey)) {
-            matches = true;
-        } else if ("customer@sareekart.com".equalsIgnoreCase(normalizedEmail) && "SK-REC-CUST-2026".equalsIgnoreCase(cleanKey)) {
-            matches = true;
-        } else if ("admin@sareekart.com".equalsIgnoreCase(normalizedEmail) && "SK-REC-ADMN-2026".equalsIgnoreCase(cleanKey)) {
-            matches = true;
+        // Reject static demo keys immediately to eliminate backdoors (SEC-02)
+        if ("SK-REC-CUST-2026".equalsIgnoreCase(cleanKey) || "SK-REC-ADMN-2026".equalsIgnoreCase(cleanKey)) {
+            log.warn("Attempted use of deprecated static demo recovery key");
+            throw new BadRequestException("Invalid recovery details provided.");
         }
 
-        if (!matches) {
-            throw new BadRequestException("Invalid or unrecognized Emergency Security Recovery Key.");
+        // Validate key format
+        if (!RecoveryKeyUtil.isValidFormat(cleanKey)) {
+            throw new BadRequestException("Invalid recovery details provided.");
         }
+
+        // Concurrency-safe atomic retrieval with pessimistic write lock (SEC-03)
+        User user = userRepository.findByEmailForUpdate(normalizedEmail)
+                .orElseThrow(() -> new BadRequestException("Invalid recovery details provided."));
+
+        if (user.getRecoveryKeyHash() == null || user.getRecoveryKeyHash().isBlank()) {
+            throw new BadRequestException("Invalid recovery details provided.");
+        }
+
+        String canonicalCandidate = RecoveryKeyUtil.canonicalize(cleanKey);
+        if (!passwordEncoder.matches(canonicalCandidate, user.getRecoveryKeyHash())) {
+            throw new BadRequestException("Invalid recovery details provided.");
+        }
+
+        // Atomic single-use consumption: clear the recovery key verifier immediately (SEC-03)
+        user.setRecoveryKeyHash(null);
+        userRepository.save(user);
 
         // Invalidate old active tokens for this user
         List<PasswordResetToken> oldTokens = passwordResetTokenRepository.findAllByUserAndUsedFalse(user);
@@ -232,7 +246,61 @@ public class UserServiceImpl implements UserService {
                 .build();
         passwordResetTokenRepository.save(resetToken);
 
-        log.info("Recovery key validated and password reset token issued");
+        // Record audit event
+        AuditLog auditLog = AuditLog.builder()
+                .action("RECOVERY_KEY_CONSUMED")
+                .entityType("User")
+                .entityId(user.getId() != null ? user.getId().toString() : "UNKNOWN")
+                .performedByUserId(user.getId())
+                .performedByEmail(user.getEmail())
+                .performedByRole(user.getRole() != null ? user.getRole().name() : "CUSTOMER")
+                .details("Emergency recovery key successfully verified and consumed")
+                .createdAt(LocalDateTime.now())
+                .build();
+        auditLogRepository.save(auditLog);
+
+        log.info("Recovery key validated and consumed, password reset token issued");
         return token;
+    }
+
+    @Override
+    public RecoveryKeyResponse generateAndProvisionRecoveryKey(String currentPassword) {
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new BadRequestException("Current password is required.");
+        }
+
+        User currentUser = getCurrentUser();
+
+        if (!passwordEncoder.matches(currentPassword.trim(), currentUser.getPassword())) {
+            throw new BadRequestException("Current password verification failed.");
+        }
+
+        // Generate cryptographically secure 128-bit key (SEC-01)
+        String rawKey = RecoveryKeyUtil.generateRecoveryKey();
+        String canonicalKey = RecoveryKeyUtil.canonicalize(rawKey);
+
+        // Store salted one-way BCrypt verifier only (SEC-01)
+        currentUser.setRecoveryKeyHash(passwordEncoder.encode(canonicalKey));
+        userRepository.save(currentUser);
+
+        // Record audit event
+        AuditLog auditLog = AuditLog.builder()
+                .action("RECOVERY_KEY_GENERATED")
+                .entityType("User")
+                .entityId(currentUser.getId() != null ? currentUser.getId().toString() : "UNKNOWN")
+                .performedByUserId(currentUser.getId())
+                .performedByEmail(currentUser.getEmail())
+                .performedByRole(currentUser.getRole() != null ? currentUser.getRole().name() : "CUSTOMER")
+                .details("Emergency recovery key generated and provisioned")
+                .createdAt(LocalDateTime.now())
+                .build();
+        auditLogRepository.save(auditLog);
+
+        log.info("Emergency recovery key generated for user ID [{}]", currentUser.getId());
+
+        return RecoveryKeyResponse.builder()
+                .recoveryKey(rawKey)
+                .message("Store this emergency recovery key securely. It will not be shown again.")
+                .build();
     }
 }

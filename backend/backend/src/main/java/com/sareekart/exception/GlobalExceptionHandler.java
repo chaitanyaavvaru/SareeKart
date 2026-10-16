@@ -40,6 +40,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage(), "BAD_REQUEST", currentRequestId()));
     }
 
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRateLimitExceeded(RateLimitExceededException ex) {
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .body(ApiResponse.error(ex.getMessage(), "RATE_LIMIT_EXCEEDED", currentRequestId()));
+    }
+
     @ExceptionHandler(PaymentConfigurationException.class)
     public ResponseEntity<ApiResponse<Void>> handlePaymentConfiguration(PaymentConfigurationException ex) {
         return ResponseEntity

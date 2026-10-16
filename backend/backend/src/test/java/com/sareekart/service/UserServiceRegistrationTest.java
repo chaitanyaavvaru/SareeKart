@@ -12,6 +12,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.sareekart.repository.AuditLogRepository;
+import com.sareekart.repository.PasswordResetTokenRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -34,6 +36,12 @@ class UserServiceRegistrationTest {
 
     @Mock
     private JwtTokenProvider tokenProvider;
+
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
+    private AuditLogRepository auditLogRepository;
 
     @InjectMocks
     private UserServiceImpl userService;

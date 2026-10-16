@@ -50,6 +50,9 @@ class UserServicePasswordResetTest {
     @Mock
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
+    @Mock
+    private com.sareekart.repository.AuditLogRepository auditLogRepository;
+
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -259,20 +262,28 @@ class UserServicePasswordResetTest {
 
     @Test
     void verifyRecoveryKeyAndGenerateResetToken_neverLogsRawTokenOrEmail() {
-        sampleUser.setRecoveryKey("SK-REC-TEST-2026");
+        String testKey = "SK-A1B2-C3D4-E5F6-7890-ABCD-EF01-2345-6789";
+        String canonicalKey = com.sareekart.security.RecoveryKeyUtil.canonicalize(testKey);
+        String testHash = "$2a$10$hashedVerifierForPriyaSharmaTest1234567890";
+        sampleUser.setRecoveryKeyHash(testHash);
+
         Logger logger = (Logger) LoggerFactory.getLogger(UserServiceImpl.class);
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
         listAppender.start();
         logger.addAppender(listAppender);
 
         try {
-            when(userRepository.findByEmail("priya@example.com")).thenReturn(Optional.of(sampleUser));
+            when(userRepository.findByEmailForUpdate("priya@example.com")).thenReturn(Optional.of(sampleUser));
+            when(passwordEncoder.matches(eq(canonicalKey), eq(testHash))).thenReturn(true);
             when(passwordResetTokenRepository.findAllByUserAndUsedFalse(sampleUser)).thenReturn(new ArrayList<>());
 
-            String token = userService.verifyRecoveryKeyAndGenerateResetToken("priya@example.com", "SK-REC-TEST-2026");
+            String token = userService.verifyRecoveryKeyAndGenerateResetToken("priya@example.com", testKey);
 
             assertNotNull(token);
             assertFalse(token.isBlank());
+            assertNull(sampleUser.getRecoveryKeyHash(), "Recovery key verifier must be atomically consumed");
+            verify(userRepository).save(sampleUser);
+            verify(auditLogRepository).save(any(com.sareekart.entity.AuditLog.class));
 
             for (ILoggingEvent event : listAppender.list) {
                 String formatted = event.getFormattedMessage();

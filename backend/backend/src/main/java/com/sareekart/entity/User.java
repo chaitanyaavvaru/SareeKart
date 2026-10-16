@@ -1,5 +1,6 @@
 package com.sareekart.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -44,7 +45,19 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    private String recoveryKey;
+    @JsonIgnore
+    @Column(name = "recovery_key")
+    private String recoveryKeyHash;
+
+    @Deprecated
+    public void setRecoveryKey(String recoveryKey) {
+        this.recoveryKeyHash = recoveryKey;
+    }
+
+    @Deprecated
+    public String getRecoveryKey() {
+        return this.recoveryKeyHash;
+    }
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

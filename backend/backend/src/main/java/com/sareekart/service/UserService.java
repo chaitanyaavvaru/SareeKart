@@ -3,6 +3,7 @@ package com.sareekart.service;
 import com.sareekart.dto.request.LoginRequest;
 import com.sareekart.dto.request.RegisterRequest;
 import com.sareekart.dto.response.AuthResponse;
+import com.sareekart.dto.response.RecoveryKeyResponse;
 import com.sareekart.entity.User;
 
 public interface UserService {
@@ -20,4 +21,6 @@ public interface UserService {
     void resetPassword(String token, String newPassword);
 
     String verifyRecoveryKeyAndGenerateResetToken(String email, String recoveryKey);
+
+    RecoveryKeyResponse generateAndProvisionRecoveryKey(String currentPassword);
 }

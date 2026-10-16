@@ -109,6 +109,7 @@ public class SecurityConfig {
                 response.getWriter().write("{\"success\":false,\"message\":\"Not authorised to perform this action\"}");
             }))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/generate-recovery-key").authenticated()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
