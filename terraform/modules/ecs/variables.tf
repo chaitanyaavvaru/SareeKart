@@ -93,6 +93,24 @@ variable "neo4j_enabled" {
   default     = false
 }
 
+variable "ssm_secret_arns" {
+  type = object({
+    db_username                   = optional(string)
+    db_password                   = optional(string)
+    jwt_secret                    = optional(string)
+    razorpay_key_id               = optional(string)
+    razorpay_key_secret           = optional(string)
+    razorpay_webhook_secret       = optional(string)
+    whatsapp_api_token            = optional(string)
+    whatsapp_phone_number_id      = optional(string)
+    whatsapp_webhook_verify_token = optional(string)
+    whatsapp_app_secret           = optional(string)
+    openai_api_key                = optional(string)
+  })
+  description = "SSM Parameter Store full ARNs for container secrets injection. Mandatory secrets (db_username, db_password, jwt_secret) must be provided when create_ecs is true."
+  default     = {}
+}
+
 variable "tags" {
   type        = map(string)
   description = "Resource tags"

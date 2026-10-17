@@ -158,9 +158,20 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "HIKARI_MIN_IDLE", value = "2" }
       ]
 
-      # Secrets placeholders: In practice, populated from SSM Parameter Store ARNs
-      # e.g.: { name = "JWT_SECRET", valueFrom = "arn:aws:ssm:...:parameter/..." }
-      secrets = []
+      # Dynamic SSM Parameter Store secret injection
+      secrets = concat(
+        try(var.ssm_secret_arns.db_username, null) != null ? [{ name = "SPRING_DATASOURCE_USERNAME", valueFrom = var.ssm_secret_arns.db_username }] : [],
+        try(var.ssm_secret_arns.db_password, null) != null ? [{ name = "SPRING_DATASOURCE_PASSWORD", valueFrom = var.ssm_secret_arns.db_password }] : [],
+        try(var.ssm_secret_arns.jwt_secret, null) != null ? [{ name = "JWT_SECRET", valueFrom = var.ssm_secret_arns.jwt_secret }] : [],
+        try(var.ssm_secret_arns.razorpay_key_id, null) != null ? [{ name = "RAZORPAY_KEY_ID", valueFrom = var.ssm_secret_arns.razorpay_key_id }] : [],
+        try(var.ssm_secret_arns.razorpay_key_secret, null) != null ? [{ name = "RAZORPAY_KEY_SECRET", valueFrom = var.ssm_secret_arns.razorpay_key_secret }] : [],
+        try(var.ssm_secret_arns.razorpay_webhook_secret, null) != null ? [{ name = "RAZORPAY_WEBHOOK_SECRET", valueFrom = var.ssm_secret_arns.razorpay_webhook_secret }] : [],
+        try(var.ssm_secret_arns.whatsapp_api_token, null) != null ? [{ name = "WHATSAPP_API_TOKEN", valueFrom = var.ssm_secret_arns.whatsapp_api_token }] : [],
+        try(var.ssm_secret_arns.whatsapp_phone_number_id, null) != null ? [{ name = "WHATSAPP_PHONE_NUMBER_ID", valueFrom = var.ssm_secret_arns.whatsapp_phone_number_id }] : [],
+        try(var.ssm_secret_arns.whatsapp_webhook_verify_token, null) != null ? [{ name = "WHATSAPP_WEBHOOK_VERIFY_TOKEN", valueFrom = var.ssm_secret_arns.whatsapp_webhook_verify_token }] : [],
+        try(var.ssm_secret_arns.whatsapp_app_secret, null) != null ? [{ name = "WHATSAPP_APP_SECRET", valueFrom = var.ssm_secret_arns.whatsapp_app_secret }] : [],
+        try(var.ssm_secret_arns.openai_api_key, null) != null ? [{ name = "OPENAI_API_KEY", valueFrom = var.ssm_secret_arns.openai_api_key }] : []
+      )
 
       healthCheck = {
         command     = ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health/liveness || exit 1"]
@@ -180,6 +191,17 @@ resource "aws_ecs_task_definition" "backend" {
       }
     }
   ])
+
+  lifecycle {
+    precondition {
+      condition = !var.create_ecs || (
+        try(var.ssm_secret_arns.db_username, null) != null &&
+        try(var.ssm_secret_arns.db_password, null) != null &&
+        try(var.ssm_secret_arns.jwt_secret, null) != null
+      )
+      error_message = "When create_ecs is true, mandatory SSM Parameter Store ARNs (db_username, db_password, jwt_secret) must be provided in var.ssm_secret_arns."
+    }
+  }
 
   tags = merge(var.tags, {
     Name        = "sareekart-${var.environment}-task-def"

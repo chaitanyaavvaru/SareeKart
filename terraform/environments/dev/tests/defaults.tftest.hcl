@@ -77,3 +77,61 @@ run "validate_s3_gateway_endpoint" {
     error_message = "S3 VPC endpoint service name must match the regional S3 service"
   }
 }
+
+run "validate_ecs_secrets_wiring_when_enabled" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  assert {
+    condition     = length(aws_ecs_task_definition.backend) == 1
+    error_message = "Task definition should be created when create_ecs is true and mandatory secrets are provided"
+  }
+
+  assert {
+    condition     = aws_ecs_task_definition.backend[0].family == "sareekart-dev-backend"
+    error_message = "Task definition family should match environment naming"
+  }
+}
+
+run "validate_ecs_fails_precondition_when_missing_mandatory_secrets" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns       = {}
+  }
+
+  expect_failures = [
+    aws_ecs_task_definition.backend
+  ]
+}

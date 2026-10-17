@@ -40,17 +40,28 @@ resource "aws_iam_policy" "ssm_secrets_read" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ssm:GetParameters",
-          "ssm:GetParameter",
-          "ssm:GetParametersByPath"
-        ]
-        Resource = "arn:aws:ssm:*:*:parameter/sareekart/${var.environment}/*"
-      }
-    ]
+    Statement = concat(
+      [
+        {
+          Effect = "Allow"
+          Action = [
+            "ssm:GetParameters",
+            "ssm:GetParameter",
+            "ssm:GetParametersByPath"
+          ]
+          Resource = length(var.ssm_parameter_arns) > 0 ? var.ssm_parameter_arns : ["arn:aws:ssm:*:*:parameter/sareekart/${var.environment}/*"]
+        }
+      ],
+      length(var.kms_key_arns) > 0 ? [
+        {
+          Effect = "Allow"
+          Action = [
+            "kms:Decrypt"
+          ]
+          Resource = var.kms_key_arns
+        }
+      ] : []
+    )
   })
 }
 

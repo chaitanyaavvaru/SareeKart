@@ -69,6 +69,36 @@ variable "container_image" {
   default     = "sareekart-backend:prod"
 }
 
+variable "ssm_secret_arns" {
+  type = object({
+    db_username                   = optional(string)
+    db_password                   = optional(string)
+    jwt_secret                    = optional(string)
+    razorpay_key_id               = optional(string)
+    razorpay_key_secret           = optional(string)
+    razorpay_webhook_secret       = optional(string)
+    whatsapp_api_token            = optional(string)
+    whatsapp_phone_number_id      = optional(string)
+    whatsapp_webhook_verify_token = optional(string)
+    whatsapp_app_secret           = optional(string)
+    openai_api_key                = optional(string)
+  })
+  description = "SSM Parameter Store full ARNs for ECS secrets injection. Mandatory secrets (db_username, db_password, jwt_secret) must be provided when create_ecs is true."
+  default     = {}
+}
+
+variable "ssm_parameter_arns" {
+  type        = list(string)
+  description = "Explicit list of SSM Parameter ARNs that the ECS execution role is permitted to read. If empty, derived from ssm_secret_arns or defaults to environment namespace."
+  default     = []
+}
+
+variable "kms_key_arns" {
+  type        = list(string)
+  description = "Optional KMS key ARNs for decrypting SSM parameters. When provided, grants kms:Decrypt to ECS execution role."
+  default     = []
+}
+
 variable "tags" {
   type        = map(string)
   description = "Common resource tags"

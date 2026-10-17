@@ -44,9 +44,11 @@ module "s3" {
 module "iam" {
   source = "../../modules/iam"
 
-  environment   = var.environment
-  s3_bucket_arn = module.s3.bucket_arn
-  tags          = var.tags
+  environment        = var.environment
+  s3_bucket_arn      = module.s3.bucket_arn
+  ssm_parameter_arns = length(var.ssm_parameter_arns) > 0 ? var.ssm_parameter_arns : [for k, v in var.ssm_secret_arns : v if v != null]
+  kms_key_arns       = var.kms_key_arns
+  tags               = var.tags
 }
 
 # ── 5. Optional Managed RDS MySQL (Disabled by Default) ──────────────────────
@@ -76,6 +78,7 @@ module "ecs" {
   task_role_arn         = module.iam.ecs_task_role_arn
   container_image       = var.container_image
   neo4j_enabled         = var.neo4j_enabled
+  ssm_secret_arns       = var.ssm_secret_arns
 
   # If RDS is enabled, point to RDS endpoint; otherwise preserve TiDB Cloud
   db_url = var.create_rds ? "jdbc:mysql://${module.rds.db_instance_endpoint}/sareekart_db?createDatabaseIfNotExist=false&useSSL=true&allowPublicKeyRetrieval=false" : var.database_url
