@@ -59,3 +59,21 @@ run "validate_default_graph_and_cost_guards" {
     error_message = "RDS endpoint output must reflect TiDB Cloud preservation"
   }
 }
+
+run "validate_s3_gateway_endpoint" {
+  command = plan
+
+  module {
+    source = "../../modules/vpc"
+  }
+
+  assert {
+    condition     = aws_vpc_endpoint.s3.vpc_endpoint_type == "Gateway"
+    error_message = "S3 VPC endpoint must be configured as a Gateway endpoint"
+  }
+
+  assert {
+    condition     = aws_vpc_endpoint.s3.service_name == "com.amazonaws.ap-south-1.s3"
+    error_message = "S3 VPC endpoint service name must match the regional S3 service"
+  }
+}

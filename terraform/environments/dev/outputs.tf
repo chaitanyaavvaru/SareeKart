@@ -31,3 +31,8 @@ output "rds_endpoint" {
   description = "RDS connection endpoint (displays 'rds_disabled_using_tidb_cloud' when disabled)"
   value       = module.rds.db_instance_endpoint
 }
+
+output "s3_endpoint_id" {
+  description = "The ID of the S3 Gateway VPC Endpoint"
+  value       = module.vpc.s3_endpoint_id
+}

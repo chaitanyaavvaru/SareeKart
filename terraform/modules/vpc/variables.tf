@@ -34,6 +34,12 @@ variable "enable_nat_gateway" {
   default     = false
 }
 
+variable "aws_region" {
+  type        = string
+  description = "Target AWS Region for regional VPC endpoints"
+  default     = "ap-south-1"
+}
+
 variable "tags" {
   type        = map(string)
   description = "Common resource tags"

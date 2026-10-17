@@ -123,3 +123,21 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
 }
+
+# ── Amazon S3 Gateway Endpoint (Zero Cost Private S3 Access) ─────────────────
+# Routes S3 traffic privately through AWS network without traversing the internet.
+# S3 Gateway Endpoints carry no hourly charge and no data processing fees ($0.00).
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids = concat(
+    [aws_route_table.public.id],
+    [aws_route_table.private.id]
+  )
+
+  tags = merge(var.tags, {
+    Name        = "sareekart-${var.environment}-s3-endpoint"
+    Environment = var.environment
+  })
+}
