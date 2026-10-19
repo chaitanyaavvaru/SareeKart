@@ -35,23 +35,22 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_standard" {
 
 # Least-privilege policy allowing ECS agent to fetch application secrets from SSM
 resource "aws_iam_policy" "ssm_secrets_read" {
+  count       = (length(var.ssm_parameter_arns) > 0 || length(var.kms_key_arns) > 0) ? 1 : 0
   name        = "sareekart-${var.environment}-ssm-secrets-read"
   description = "Allows ECS agent to read SareeKart configuration secrets from SSM"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = concat(
-      [
+      length(var.ssm_parameter_arns) > 0 ? [
         {
           Effect = "Allow"
           Action = [
-            "ssm:GetParameters",
-            "ssm:GetParameter",
-            "ssm:GetParametersByPath"
+            "ssm:GetParameters"
           ]
-          Resource = length(var.ssm_parameter_arns) > 0 ? var.ssm_parameter_arns : ["arn:aws:ssm:*:*:parameter/sareekart/${var.environment}/*"]
+          Resource = var.ssm_parameter_arns
         }
-      ],
+      ] : [],
       length(var.kms_key_arns) > 0 ? [
         {
           Effect = "Allow"
@@ -66,8 +65,9 @@ resource "aws_iam_policy" "ssm_secrets_read" {
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_execution_ssm" {
+  count      = (length(var.ssm_parameter_arns) > 0 || length(var.kms_key_arns) > 0) ? 1 : 0
   role       = aws_iam_role.ecs_execution.name
-  policy_arn = aws_iam_policy.ssm_secrets_read.arn
+  policy_arn = aws_iam_policy.ssm_secrets_read[0].arn
 }
 
 # ── 2. ECS Task Role (Runtime Application Process Permissions) ───────────────

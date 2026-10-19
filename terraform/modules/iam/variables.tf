@@ -12,7 +12,7 @@ variable "s3_bucket_arn" {
 
 variable "ssm_parameter_arns" {
   type        = list(string)
-  description = "Explicit list of SSM Parameter ARNs that the ECS execution role is permitted to read. Defaults to environment namespace path if empty."
+  description = "Explicit list of SSM Parameter ARNs that the ECS execution role is permitted to read. When empty, no SSM policy is attached."
   default     = []
 }
 

@@ -160,17 +160,17 @@ resource "aws_ecs_task_definition" "backend" {
 
       # Dynamic SSM Parameter Store secret injection
       secrets = concat(
-        try(var.ssm_secret_arns.db_username, null) != null ? [{ name = "SPRING_DATASOURCE_USERNAME", valueFrom = var.ssm_secret_arns.db_username }] : [],
-        try(var.ssm_secret_arns.db_password, null) != null ? [{ name = "SPRING_DATASOURCE_PASSWORD", valueFrom = var.ssm_secret_arns.db_password }] : [],
-        try(var.ssm_secret_arns.jwt_secret, null) != null ? [{ name = "JWT_SECRET", valueFrom = var.ssm_secret_arns.jwt_secret }] : [],
-        try(var.ssm_secret_arns.razorpay_key_id, null) != null ? [{ name = "RAZORPAY_KEY_ID", valueFrom = var.ssm_secret_arns.razorpay_key_id }] : [],
-        try(var.ssm_secret_arns.razorpay_key_secret, null) != null ? [{ name = "RAZORPAY_KEY_SECRET", valueFrom = var.ssm_secret_arns.razorpay_key_secret }] : [],
-        try(var.ssm_secret_arns.razorpay_webhook_secret, null) != null ? [{ name = "RAZORPAY_WEBHOOK_SECRET", valueFrom = var.ssm_secret_arns.razorpay_webhook_secret }] : [],
-        try(var.ssm_secret_arns.whatsapp_api_token, null) != null ? [{ name = "WHATSAPP_API_TOKEN", valueFrom = var.ssm_secret_arns.whatsapp_api_token }] : [],
-        try(var.ssm_secret_arns.whatsapp_phone_number_id, null) != null ? [{ name = "WHATSAPP_PHONE_NUMBER_ID", valueFrom = var.ssm_secret_arns.whatsapp_phone_number_id }] : [],
-        try(var.ssm_secret_arns.whatsapp_webhook_verify_token, null) != null ? [{ name = "WHATSAPP_WEBHOOK_VERIFY_TOKEN", valueFrom = var.ssm_secret_arns.whatsapp_webhook_verify_token }] : [],
-        try(var.ssm_secret_arns.whatsapp_app_secret, null) != null ? [{ name = "WHATSAPP_APP_SECRET", valueFrom = var.ssm_secret_arns.whatsapp_app_secret }] : [],
-        try(var.ssm_secret_arns.openai_api_key, null) != null ? [{ name = "OPENAI_API_KEY", valueFrom = var.ssm_secret_arns.openai_api_key }] : []
+        try(trimspace(var.ssm_secret_arns.db_username), "") != "" ? [{ name = "SPRING_DATASOURCE_USERNAME", valueFrom = trimspace(var.ssm_secret_arns.db_username) }] : [],
+        try(trimspace(var.ssm_secret_arns.db_password), "") != "" ? [{ name = "SPRING_DATASOURCE_PASSWORD", valueFrom = trimspace(var.ssm_secret_arns.db_password) }] : [],
+        try(trimspace(var.ssm_secret_arns.jwt_secret), "") != "" ? [{ name = "JWT_SECRET", valueFrom = trimspace(var.ssm_secret_arns.jwt_secret) }] : [],
+        try(trimspace(var.ssm_secret_arns.razorpay_key_id), "") != "" ? [{ name = "RAZORPAY_KEY_ID", valueFrom = trimspace(var.ssm_secret_arns.razorpay_key_id) }] : [],
+        try(trimspace(var.ssm_secret_arns.razorpay_key_secret), "") != "" ? [{ name = "RAZORPAY_KEY_SECRET", valueFrom = trimspace(var.ssm_secret_arns.razorpay_key_secret) }] : [],
+        try(trimspace(var.ssm_secret_arns.razorpay_webhook_secret), "") != "" ? [{ name = "RAZORPAY_WEBHOOK_SECRET", valueFrom = trimspace(var.ssm_secret_arns.razorpay_webhook_secret) }] : [],
+        try(trimspace(var.ssm_secret_arns.whatsapp_api_token), "") != "" ? [{ name = "WHATSAPP_API_TOKEN", valueFrom = trimspace(var.ssm_secret_arns.whatsapp_api_token) }] : [],
+        try(trimspace(var.ssm_secret_arns.whatsapp_phone_number_id), "") != "" ? [{ name = "WHATSAPP_PHONE_NUMBER_ID", valueFrom = trimspace(var.ssm_secret_arns.whatsapp_phone_number_id) }] : [],
+        try(trimspace(var.ssm_secret_arns.whatsapp_webhook_verify_token), "") != "" ? [{ name = "WHATSAPP_WEBHOOK_VERIFY_TOKEN", valueFrom = trimspace(var.ssm_secret_arns.whatsapp_webhook_verify_token) }] : [],
+        try(trimspace(var.ssm_secret_arns.whatsapp_app_secret), "") != "" ? [{ name = "WHATSAPP_APP_SECRET", valueFrom = trimspace(var.ssm_secret_arns.whatsapp_app_secret) }] : [],
+        try(trimspace(var.ssm_secret_arns.openai_api_key), "") != "" ? [{ name = "OPENAI_API_KEY", valueFrom = trimspace(var.ssm_secret_arns.openai_api_key) }] : []
       )
 
       healthCheck = {
@@ -195,11 +195,11 @@ resource "aws_ecs_task_definition" "backend" {
   lifecycle {
     precondition {
       condition = !var.create_ecs || (
-        try(var.ssm_secret_arns.db_username, null) != null &&
-        try(var.ssm_secret_arns.db_password, null) != null &&
-        try(var.ssm_secret_arns.jwt_secret, null) != null
+        try(trimspace(var.ssm_secret_arns.db_username), "") != "" &&
+        try(trimspace(var.ssm_secret_arns.db_password), "") != "" &&
+        try(trimspace(var.ssm_secret_arns.jwt_secret), "") != ""
       )
-      error_message = "When create_ecs is true, mandatory SSM Parameter Store ARNs (db_username, db_password, jwt_secret) must be provided in var.ssm_secret_arns."
+      error_message = "When create_ecs is true, mandatory SSM Parameter Store ARNs (db_username, db_password, jwt_secret) must be provided with non-empty values in var.ssm_secret_arns."
     }
   }
 

@@ -46,7 +46,7 @@ module "iam" {
 
   environment        = var.environment
   s3_bucket_arn      = module.s3.bucket_arn
-  ssm_parameter_arns = length(var.ssm_parameter_arns) > 0 ? var.ssm_parameter_arns : [for k, v in var.ssm_secret_arns : v if v != null]
+  ssm_parameter_arns = length(var.ssm_parameter_arns) > 0 ? var.ssm_parameter_arns : [for k, v in var.ssm_secret_arns : trimspace(v) if try(trimspace(v), "") != ""]
   kms_key_arns       = var.kms_key_arns
   tags               = var.tags
 }

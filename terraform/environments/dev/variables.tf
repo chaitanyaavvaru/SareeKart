@@ -83,13 +83,13 @@ variable "ssm_secret_arns" {
     whatsapp_app_secret           = optional(string)
     openai_api_key                = optional(string)
   })
-  description = "SSM Parameter Store full ARNs for ECS secrets injection. Mandatory secrets (db_username, db_password, jwt_secret) must be provided when create_ecs is true."
+  description = "SSM Parameter Store full ARNs for ECS secrets injection. Mandatory secrets (db_username, db_password, jwt_secret) must be provided with non-empty ARNs when create_ecs is true."
   default     = {}
 }
 
 variable "ssm_parameter_arns" {
   type        = list(string)
-  description = "Explicit list of SSM Parameter ARNs that the ECS execution role is permitted to read. If empty, derived from ssm_secret_arns or defaults to environment namespace."
+  description = "Explicit list of SSM Parameter ARNs that the ECS execution role is permitted to read. If empty, derived from ssm_secret_arns (no policy created if empty)."
   default     = []
 }
 
