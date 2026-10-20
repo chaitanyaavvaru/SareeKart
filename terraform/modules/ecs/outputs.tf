@@ -17,3 +17,8 @@ output "service_name" {
   description = "Name of the backend ECS service"
   value       = var.create_ecs ? aws_ecs_service.backend[0].name : "ecs_service_disabled"
 }
+
+output "task_subnet_tier" {
+  description = "Selected subnet tier for ECS task placement ('public' or 'private')"
+  value       = var.task_subnet_tier
+}

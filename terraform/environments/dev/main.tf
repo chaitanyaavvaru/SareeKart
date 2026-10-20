@@ -67,7 +67,9 @@ module "ecs" {
   source = "../../modules/ecs"
 
   create_ecs            = var.create_ecs
+  task_subnet_tier      = var.task_subnet_tier
   assign_public_ip      = var.assign_public_ip
+  enable_nat_gateway    = var.enable_nat_gateway
   environment           = var.environment
   vpc_id                = module.vpc.vpc_id
   public_subnet_ids     = module.vpc.public_subnet_ids

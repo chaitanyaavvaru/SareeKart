@@ -39,9 +39,20 @@ variable "create_ecs" {
   default     = false
 }
 
+variable "task_subnet_tier" {
+  type        = string
+  description = "Network subnet tier for ECS task placement. Valid values: 'private' (default secure tier) or 'public' (development smoke-testing tier). When 'public', assign_public_ip must be explicitly true. When 'private', assign_public_ip must be false. Public subnet placement (Option A) incurs AWS public IPv4 address charges ($0.005/hr ~ $3.65/mo per continuously assigned address), plus Fargate compute and ALB charges. For Option B (private), regional pricing for VPC Interface Endpoints and NAT Gateway must be recalculated for ap-south-1."
+  default     = "private"
+
+  validation {
+    condition     = contains(["private", "public"], lower(var.task_subnet_tier))
+    error_message = "task_subnet_tier must be either 'private' or 'public'."
+  }
+}
+
 variable "assign_public_ip" {
   type        = bool
-  description = "Explicit development-only toggle: whether to assign public IP to ECS tasks when NAT Gateway is disabled. Defaults to FALSE. When explicitly enabled for dev, tasks run in public subnets with strict ALB-only security group ingress."
+  description = "Explicit development-only toggle: whether to assign public IP to ECS tasks. Defaults to FALSE (secure private-subnet default). When explicitly enabled for dev alongside task_subnet_tier = 'public', tasks run in public subnets with strict ALB-only security group ingress. AWS charges $0.005/hr (~$3.65/mo) per continuously assigned public IPv4 address."
   default     = false
 }
 

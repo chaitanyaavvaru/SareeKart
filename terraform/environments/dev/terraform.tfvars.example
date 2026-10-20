@@ -11,8 +11,17 @@ vpc_cidr    = "10.0.0.0/16"
 # Cost Guards: Keep FALSE to avoid hourly AWS charges ($0 baseline)
 enable_nat_gateway = false
 create_rds         = false
-create_ecs         = false # Guards ALB ($16.20/mo) and ECS Fargate ($9.50/mo)
-assign_public_ip   = false # Explicit dev-only toggle: set to true ONLY if create_ecs = true and enable_nat_gateway = false
+create_ecs         = false # Guards ALB (~$16.43/mo) and ECS Fargate (~$8.76/mo)
+
+# Hybrid Networking Strategy (Milestone 2):
+# Defaults to private-subnet placement without public IPs (Stage 1 ₹0 baseline).
+# Option A (Development Smoke Testing): Set task_subnet_tier = "public" and assign_public_ip = true.
+#   Incurs AWS public IPv4 address fee ($0.005/hr ~ $3.65/mo per task), plus Fargate and ALB charges.
+# Option B (Target Production Architecture): Set task_subnet_tier = "private", assign_public_ip = false,
+#   and enable_nat_gateway = true. Requires VPC Interface Endpoints (ecr.api, ecr.dkr, ssm, logs) whose
+#   pricing must be calculated for ap-south-1.
+task_subnet_tier = "private"
+assign_public_ip = false
 
 # Database: Preserves existing zero-cost TiDB Cloud integration
 database_url = "jdbc:mysql://<tidb_host>:4000/sareekart_db?useSSL=true&allowPublicKeyRetrieval=true"

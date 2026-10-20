@@ -22,6 +22,11 @@ output "ecs_service_name" {
   value       = module.ecs.service_name
 }
 
+output "task_subnet_tier" {
+  description = "Selected subnet tier for ECS task placement ('public' or 'private')"
+  value       = module.ecs.task_subnet_tier
+}
+
 output "s3_bucket_arn" {
   description = "ARN of the private S3 media bucket"
   value       = module.s3.bucket_arn
@@ -35,4 +40,9 @@ output "rds_endpoint" {
 output "s3_endpoint_id" {
   description = "The ID of the S3 Gateway VPC Endpoint"
   value       = module.vpc.s3_endpoint_id
+}
+
+output "nat_gateway_enabled" {
+  description = "Whether NAT Gateway is enabled in the VPC"
+  value       = module.vpc.nat_gateway_enabled
 }

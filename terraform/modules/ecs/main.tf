@@ -5,18 +5,37 @@
 # This entire module is GUARDED by var.create_ecs (default: false).
 # When false, zero AWS compute or load balancing resources are provisioned ($0).
 #
-# NETWORKING & EGRESS ARCHITECTURE:
-# ECS Fargate tasks need outbound internet connectivity to:
-#   1. Pull images from ECR / registries
-#   2. Ship logs to AWS CloudWatch Logs
-#   3. Retrieve database credentials / secrets from AWS SSM Parameter Store
-#   4. Query external TiDB Cloud Serverless (MySQL 8 wire-compatible on port 4000)
+# HYBRID NETWORKING & EGRESS ARCHITECTURE (Milestone 2):
+# The SareeKart production container (sareekart-backend:prod) requires outbound
+# network connectivity across 7 critical dependency paths:
+#   1. ECR Container Image Manifest & Layers: ecr.api, ecr.dkr, and S3 Gateway Endpoint
+#   2. SSM Parameter Store Secret Injection: ssm (and kms if customer-managed CMK is used)
+#   3. Container Logging: CloudWatch Logs (logs)
+#   4. Database Connectivity: TiDB Cloud Serverless (MySQL 8 wire protocol on port 4000)
+#   5. Media Storage: Private S3 media bucket (sareekart-*-media via S3 Gateway Endpoint)
+#   6. External SaaS Integrations: Razorpay, Meta WhatsApp Cloud API, OpenAI API (HTTPS 443)
+#   7. Graph Engine (Optional): Neo4j AuraDB (Bolt protocol on port 7687; MySQL fallback active)
 #
-# In production, this egress is routed through AWS NAT Gateways or Interface VPC
-# Endpoints in private subnets (assign_public_ip = false).
-# In development (₹0 cloud budget with NAT disabled), tasks can be placed in
-# public subnets with assign_public_ip = true. Inbound traffic remains 100% secure
-# because the ecs security group allows ingress ONLY from the ALB (port 8081).
+# NETWORKING STRATEGIES:
+# Option A — Public Subnet Smoke Testing (Development):
+#   Set task_subnet_tier = "public" and assign_public_ip = true.
+#   Tasks receive public IPv4 addresses and route outbound directly via Internet Gateway.
+#   Inbound traffic is strictly locked down: ecs security group permits ingress ONLY from
+#   the ALB on container port 8081 (zero public inbound access).
+#   Cost Note: AWS charges $0.005/hr (~$3.65/mo per continuously assigned address) for
+#   public IPv4, in addition to Fargate compute and ALB charges.
+#
+# Option B — Private Subnet Target Architecture (Enterprise Production):
+#   Set task_subnet_tier = "private" and assign_public_ip = false.
+#   Tasks run in private subnets with zero public IP exposure (CIS AWS Benchmark compliant).
+#   Private Fargate image pulls require ecr.api, ecr.dkr, and S3 Gateway Endpoint.
+#   Private secret injection and logging require ssm and logs VPC Interface Endpoints.
+#   Outbound access to non-AWS endpoints (TiDB Cloud TCP 4000, Razorpay/WhatsApp/OpenAI HTTPS 443)
+#   cannot traverse AWS PrivateLink and requires an AWS NAT Gateway or dedicated egress proxy.
+#   Cost Note: VPC Interface Endpoints and NAT Gateway charges must be calculated using
+#   ap-south-1 (Mumbai) regional rates, which differ from US-region pricing examples.
+#   Neither NAT Gateway nor PrivateLink eliminates the necessity of destination-based egress
+#   security group rules on ports 443 and 4000.
 # ============================================================================
 
 resource "aws_ecs_cluster" "main" {
@@ -219,7 +238,7 @@ resource "aws_ecs_service" "backend" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = var.task_subnets != null ? var.task_subnets : (var.assign_public_ip ? var.public_subnet_ids : var.private_subnet_ids)
+    subnets          = var.task_subnets != null ? var.task_subnets : (var.task_subnet_tier == "public" ? var.public_subnet_ids : var.private_subnet_ids)
     security_groups  = [var.ecs_security_group_id]
     assign_public_ip = var.assign_public_ip
   }
@@ -243,6 +262,29 @@ resource "aws_ecs_service" "backend" {
   }
 
   depends_on = [aws_lb_listener.http]
+
+  lifecycle {
+    precondition {
+      condition = !var.create_ecs || (
+        (var.task_subnets != null ? length(var.task_subnets) > 0 : true) &&
+        (
+          (
+            var.task_subnet_tier == "public" &&
+            var.assign_public_ip == true &&
+            alltrue([for s in(var.task_subnets != null ? var.task_subnets : []) : contains(var.public_subnet_ids, s)])
+          )
+          ||
+          (
+            var.task_subnet_tier == "private" &&
+            var.assign_public_ip == false &&
+            var.enable_nat_gateway == true &&
+            alltrue([for s in(var.task_subnets != null ? var.task_subnets : []) : contains(var.private_subnet_ids, s)])
+          )
+        )
+      )
+      error_message = "Invalid, contradictory, or unroutable networking configuration for ECS task placement. When create_ecs is true: (1) if task_subnet_tier is 'public', assign_public_ip must be true and any custom task_subnets must be non-empty and reside strictly within public_subnet_ids; (2) if task_subnet_tier is 'private', assign_public_ip must be false, enable_nat_gateway must be true, and any custom task_subnets must be non-empty and reside strictly within private_subnet_ids to guarantee outbound routes for container image pulls, SSM secrets, TiDB Cloud (port 4000), and external SaaS APIs (port 443). Arbitrary custom subnet IDs and empty subnet lists are not permitted."
+    }
+  }
 
   tags = merge(var.tags, {
     Name        = "sareekart-${var.environment}-backend-svc"

@@ -27,3 +27,8 @@ output "s3_prefix_list_id" {
   description = "The prefix list ID of the S3 Gateway VPC Endpoint"
   value       = aws_vpc_endpoint.s3.prefix_list_id
 }
+
+output "nat_gateway_enabled" {
+  description = "Whether NAT Gateway is enabled in the VPC"
+  value       = var.enable_nat_gateway
+}

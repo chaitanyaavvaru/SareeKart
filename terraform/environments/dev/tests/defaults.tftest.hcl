@@ -58,6 +58,26 @@ run "validate_default_graph_and_cost_guards" {
     condition     = output.rds_endpoint == "rds_disabled_using_tidb_cloud"
     error_message = "RDS endpoint output must reflect TiDB Cloud preservation"
   }
+
+  assert {
+    condition     = var.task_subnet_tier == "private"
+    error_message = "task_subnet_tier should default to private for secure default placement"
+  }
+
+  assert {
+    condition     = var.assign_public_ip == false
+    error_message = "assign_public_ip should default to false to prevent unexpected IPv4 address charges"
+  }
+
+  assert {
+    condition     = output.task_subnet_tier == "private"
+    error_message = "task_subnet_tier output should reflect private default"
+  }
+
+  assert {
+    condition     = output.nat_gateway_enabled == false
+    error_message = "nat_gateway_enabled output should reflect disabled default"
+  }
 }
 
 run "validate_s3_gateway_endpoint" {
@@ -78,6 +98,66 @@ run "validate_s3_gateway_endpoint" {
   }
 }
 
+run "validate_vpc_public_and_private_routing" {
+  command = plan
+
+  module {
+    source = "../../modules/vpc"
+  }
+
+  assert {
+    condition     = length(aws_subnet.public) == 2
+    error_message = "VPC must provision two public subnets for multi-AZ availability"
+  }
+
+  assert {
+    condition     = length(aws_subnet.private) == 2
+    error_message = "VPC must provision two private subnets for multi-AZ availability"
+  }
+
+  assert {
+    condition     = length(aws_route_table.public.route) == 1
+    error_message = "Public route table must have exactly one static route"
+  }
+
+  assert {
+    condition     = tolist(aws_route_table.public.route)[0].cidr_block == "0.0.0.0/0"
+    error_message = "Public route table default route destination must be 0.0.0.0/0"
+  }
+}
+
+run "validate_vpc_nat_routing_when_enabled" {
+  command = plan
+
+  module {
+    source = "../../modules/vpc"
+  }
+
+  variables {
+    enable_nat_gateway = true
+  }
+
+  assert {
+    condition     = length(aws_nat_gateway.main) == 1
+    error_message = "NAT Gateway must be created when enable_nat_gateway is true"
+  }
+
+  assert {
+    condition     = length(aws_eip.nat) == 1
+    error_message = "NAT Elastic IP must be allocated when enable_nat_gateway is true"
+  }
+
+  assert {
+    condition     = length(aws_route_table.private.route) == 1
+    error_message = "Private route table must have exactly one route when NAT is enabled"
+  }
+
+  assert {
+    condition     = tolist(aws_route_table.private.route)[0].cidr_block == "0.0.0.0/0"
+    error_message = "Private route table default route destination must be 0.0.0.0/0"
+  }
+}
+
 run "validate_ecs_secrets_wiring_when_enabled" {
   command = plan
 
@@ -87,6 +167,7 @@ run "validate_ecs_secrets_wiring_when_enabled" {
 
   variables {
     create_ecs            = true
+    enable_nat_gateway    = true
     vpc_id                = "vpc-12345678"
     public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
     private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
@@ -307,5 +388,270 @@ run "validate_iam_least_privilege_ssm_policy_when_arns_configured" {
       "arn:aws:kms:ap-south-1:123456789012:key/12345678-1234-1234-1234-123456789012"
     ]
     error_message = "KMS statement Resource must match exact key ARNs without wildcards"
+  }
+}
+
+run "validate_ecs_public_subnet_smoke_test_mode" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    task_subnet_tier      = "public"
+    assign_public_ip      = true
+    task_subnets          = null
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  assert {
+    condition     = aws_ecs_service.backend[0].network_configuration[0].assign_public_ip == true
+    error_message = "Public subnet smoke-test mode must explicitly enable assign_public_ip"
+  }
+
+  assert {
+    condition     = aws_ecs_service.backend[0].network_configuration[0].subnets == toset(["subnet-11111111", "subnet-22222222"])
+    error_message = "Public subnet smoke-test mode must place tasks strictly in public subnets"
+  }
+}
+
+run "validate_ecs_private_subnet_mode" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    task_subnet_tier      = "private"
+    assign_public_ip      = false
+    enable_nat_gateway    = true
+    task_subnets          = null
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  assert {
+    condition     = aws_ecs_service.backend[0].network_configuration[0].assign_public_ip == false
+    error_message = "Private subnet mode must explicitly disable assign_public_ip"
+  }
+
+  assert {
+    condition     = aws_ecs_service.backend[0].network_configuration[0].subnets == toset(["subnet-33333333", "subnet-44444444"])
+    error_message = "Private subnet mode must place tasks strictly in private subnets"
+  }
+}
+
+run "validate_ecs_fails_precondition_when_private_tier_without_nat" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    task_subnet_tier      = "private"
+    assign_public_ip      = false
+    enable_nat_gateway    = false
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  expect_failures = [
+    aws_ecs_service.backend
+  ]
+}
+
+run "validate_ecs_fails_precondition_when_public_tier_without_public_ip" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    task_subnet_tier      = "public"
+    assign_public_ip      = false
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  expect_failures = [
+    aws_ecs_service.backend
+  ]
+}
+
+run "validate_ecs_fails_precondition_when_private_tier_with_public_ip" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    task_subnet_tier      = "private"
+    assign_public_ip      = true
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  expect_failures = [
+    aws_ecs_service.backend
+  ]
+}
+
+run "validate_ecs_fails_precondition_when_empty_task_subnets" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    task_subnet_tier      = "public"
+    assign_public_ip      = true
+    task_subnets          = []
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  expect_failures = [
+    aws_ecs_service.backend
+  ]
+}
+
+run "validate_ecs_fails_precondition_when_arbitrary_custom_task_subnets" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    task_subnet_tier      = "public"
+    assign_public_ip      = true
+    task_subnets          = ["subnet-arbitrary-12345678"]
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  expect_failures = [
+    aws_ecs_service.backend
+  ]
+}
+
+run "validate_ecs_custom_task_subnets_verified_subset" {
+  command = plan
+
+  module {
+    source = "../../modules/ecs"
+  }
+
+  variables {
+    create_ecs            = true
+    task_subnet_tier      = "public"
+    assign_public_ip      = true
+    task_subnets          = ["subnet-11111111"]
+    vpc_id                = "vpc-12345678"
+    public_subnet_ids     = ["subnet-11111111", "subnet-22222222"]
+    private_subnet_ids    = ["subnet-33333333", "subnet-44444444"]
+    alb_security_group_id = "sg-11111111"
+    ecs_security_group_id = "sg-22222222"
+    execution_role_arn    = "arn:aws:iam::123456789012:role/exec"
+    task_role_arn         = "arn:aws:iam::123456789012:role/task"
+    ssm_secret_arns = {
+      db_username = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_username"
+      db_password = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/db_password"
+      jwt_secret  = "arn:aws:ssm:ap-south-1:123456789012:parameter/sareekart/dev/jwt_secret"
+    }
+  }
+
+  assert {
+    condition     = aws_ecs_service.backend[0].network_configuration[0].assign_public_ip == true
+    error_message = "Public subnet verified override must have assign_public_ip enabled"
+  }
+
+  assert {
+    condition     = aws_ecs_service.backend[0].network_configuration[0].subnets == toset(["subnet-11111111"])
+    error_message = "Custom verified task_subnets must be assigned directly"
   }
 }

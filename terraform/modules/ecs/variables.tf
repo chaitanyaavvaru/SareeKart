@@ -4,16 +4,33 @@ variable "create_ecs" {
   default     = false
 }
 
+variable "task_subnet_tier" {
+  type        = string
+  description = "Network subnet tier for ECS task placement. Valid values: 'private' (default secure tier) or 'public' (development smoke-testing tier). When 'public', assign_public_ip must be explicitly true. When 'private', assign_public_ip must be false. Public subnet placement incurs AWS public IPv4 address charges ($0.005/hr ~ $3.65/mo per continuously assigned address), plus Fargate compute and ALB charges. For Option B (private), pricing for VPC Interface Endpoints and NAT Gateway must be recalculated for ap-south-1."
+  default     = "private"
+
+  validation {
+    condition     = contains(["private", "public"], lower(var.task_subnet_tier))
+    error_message = "task_subnet_tier must be either 'private' or 'public'."
+  }
+}
+
 variable "assign_public_ip" {
   type        = bool
-  description = "Whether to assign a public IP to ECS tasks. Defaults to FALSE (secure private-subnet default). In development environments without a NAT Gateway, this can be explicitly enabled to provide outbound egress to ECR, CloudWatch, and TiDB Cloud."
+  description = "Whether to assign a public IP to ECS tasks. Defaults to FALSE (secure private-subnet default). In development environments without a NAT Gateway, this can be explicitly enabled alongside task_subnet_tier = 'public' for development smoke testing (Option A), which incurs AWS public IPv4 address charges of $0.005/hr (~$3.65/mo per continuously assigned address) in addition to Fargate and ALB compute costs."
   default     = false
 }
 
 variable "task_subnets" {
   type        = list(string)
-  description = "Explicit subnets for ECS task placement. If null, automatically selects public subnets when assign_public_ip is true, or private subnets when false."
+  description = "Explicit subnets for ECS task placement. If null, automatically selects public_subnet_ids when task_subnet_tier is 'public', or private_subnet_ids when 'private'. If provided when create_ecs is true, must be a non-empty list whose elements reside strictly within the verified subnet IDs of the selected tier (public_subnet_ids for 'public' or private_subnet_ids for 'private'); arbitrary subnet IDs and empty lists are rejected."
   default     = null
+}
+
+variable "enable_nat_gateway" {
+  type        = bool
+  description = "Whether a NAT Gateway is enabled in the VPC for private task outbound egress. When create_ecs is true and task_subnet_tier is 'private', an outbound route (enable_nat_gateway = true) is strictly required to pull container images, retrieve SSM secrets, query TiDB Cloud (port 4000), and access external SaaS APIs (port 443)."
+  default     = false
 }
 
 variable "environment" {
