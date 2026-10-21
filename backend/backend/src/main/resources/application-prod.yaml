@@ -53,3 +53,10 @@ logging:
 app:
   auth:
     expose-reset-token-in-response: ${EXPOSE_RESET_TOKEN_IN_RESPONSE:false}
+
+sareekart:
+  storage:
+    type: ${STORAGE_TYPE:s3}
+    s3:
+      bucket-name: ${AWS_S3_BUCKET_NAME}
+      region: ${AWS_REGION:ap-south-1}

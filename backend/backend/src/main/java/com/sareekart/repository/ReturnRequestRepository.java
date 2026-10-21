@@ -47,4 +47,10 @@ public interface ReturnRequestRepository extends JpaRepository<ReturnRequest, Lo
      */
     @Query("SELECT COUNT(r) FROM ReturnRequest r WHERE r.status = :status")
     long countByStatus(@Param("status") ReturnStatus status);
+
+    /**
+     * Checks if a return request owned by the specified customer contains the defect photo filename.
+     */
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN TRUE ELSE FALSE END FROM ReturnRequest r WHERE r.user.id = :userId AND r.images LIKE CONCAT('%', :filename, '%')")
+    boolean existsByUserIdAndImageFilename(@Param("userId") Long userId, @Param("filename") String filename);
 }

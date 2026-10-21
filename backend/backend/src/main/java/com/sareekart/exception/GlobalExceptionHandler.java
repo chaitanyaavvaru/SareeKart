@@ -128,6 +128,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Not authorised to perform this action", "AUTHORIZATION_ERROR", currentRequestId()));
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatusException(org.springframework.web.server.ResponseStatusException ex) {
+        return ResponseEntity
+                .status(ex.getStatusCode())
+                .body(ApiResponse.error(ex.getReason() != null ? ex.getReason() : ex.getMessage(), ex.getStatusCode().toString(), currentRequestId()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         String reqId = currentRequestId();

@@ -33,6 +33,12 @@ variable "enable_nat_gateway" {
   default     = false
 }
 
+variable "s3_bucket_name" {
+  type        = string
+  description = "Name of the S3 media bucket for persistent file storage"
+  default     = ""
+}
+
 variable "environment" {
   type        = string
   description = "Deployment environment name"

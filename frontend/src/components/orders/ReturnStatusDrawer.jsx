@@ -14,6 +14,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { useCurrency } from '../../context/CurrencyContext';
+import AuthenticatedImage from '../common/AuthenticatedImage';
 
 const RETURN_MILESTONES = [
   {
@@ -414,14 +415,10 @@ export default function ReturnStatusDrawer({ isOpen, onClose, returnClaim, order
                     onClick={() => setActiveLightboxImage(imgUrl)}
                     className="group relative aspect-square overflow-hidden rounded-[8px] border border-[#DDD8CF] bg-[#FAF8F5] cursor-pointer"
                   >
-                    <img
+                    <AuthenticatedImage
                       src={imgUrl}
                       alt={`Condition evidence ${idx + 1}`}
                       className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                      onError={(e) => {
-                        e.target.src =
-                          'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&fm=webp&w=400&q=80';
-                      }}
                     />
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Maximize2 className="h-4 w-4 text-white" />
@@ -497,7 +494,7 @@ export default function ReturnStatusDrawer({ isOpen, onClose, returnClaim, order
             >
               <X className="h-5 w-5" />
             </button>
-            <img
+            <AuthenticatedImage
               src={activeLightboxImage}
               alt="High resolution defect evidence"
               className="max-h-[80vh] w-auto object-contain rounded-[8px]"

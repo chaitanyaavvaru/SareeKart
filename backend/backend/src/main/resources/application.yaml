@@ -95,6 +95,15 @@ neo4j:
   password: ${NEO4J_PASSWORD:sareekart2026}
   enabled: ${NEO4J_ENABLED:true}
 
+sareekart:
+  storage:
+    type: ${STORAGE_TYPE:local}
+    local:
+      upload-dir: ${LOCAL_UPLOAD_DIR:uploads}
+    s3:
+      bucket-name: ${AWS_S3_BUCKET_NAME:}
+      region: ${AWS_REGION:ap-south-1}
+
 management:
   endpoints:
     web:

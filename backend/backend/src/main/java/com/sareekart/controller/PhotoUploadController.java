@@ -1,5 +1,8 @@
 package com.sareekart.controller;
 
+import com.sareekart.service.storage.FileStorageService;
+import com.sareekart.service.storage.StorageCategory;
+import com.sareekart.service.storage.StoredFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -9,15 +12,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.*;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Handles offline (local-network) photo uploads for saree products and inventory drapes.
- * Files are stored in the local filesystem under uploads/saree-photos/
- * and served back as a public static resource via /uploads/** mapping.
+ * Handles photo uploads for saree products and inventory drapes.
+ * Uses the FileStorageService abstraction to store assets locally or in AWS S3.
  *
  * Roles allowed: OWNER, MANAGER, ADMIN
  */
@@ -29,12 +29,12 @@ public class PhotoUploadController {
 
     private final com.sareekart.repository.ProductRepository productRepository;
     private final com.sareekart.repository.InventoryItemRepository inventoryItemRepository;
+    private final FileStorageService fileStorageService;
 
     private static final long MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
     private static final Set<String> ALLOWED_TYPES = Set.of(
             "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/jfif"
     );
-    private static final Path UPLOAD_DIR = Paths.get("uploads", "saree-photos").toAbsolutePath();
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'ADMIN')")
@@ -63,39 +63,25 @@ public class PhotoUploadController {
         }
 
         try {
-            Files.createDirectories(UPLOAD_DIR);
-
-            String ext = "jpg";
-            if (contentType.contains("/")) {
-                String sub = contentType.split("/")[1].toLowerCase().replace("jpeg", "jpg");
-                if (sub.length() <= 5) ext = sub;
-            }
-
             String prefix = "";
             if (productId != null) {
-                prefix = "product-" + productId + "-";
+                prefix = "product-" + productId;
             } else if (sku != null && !sku.isBlank()) {
-                prefix = "sku-" + sku.replaceAll("[^a-zA-Z0-9_-]", "") + "-";
+                prefix = "sku-" + sku.replaceAll("[^a-zA-Z0-9_-]", "");
             } else {
-                prefix = "product-new-";
+                prefix = "product-new";
             }
 
-            String filename = prefix + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 8) + "." + ext;
-            Path dest = UPLOAD_DIR.resolve(filename);
+            StoredFile storedFile = fileStorageService.store(file, StorageCategory.SAREE_PHOTOS, prefix);
 
-            try (InputStream in = file.getInputStream()) {
-                Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            String url = "/uploads/saree-photos/" + filename;
-            log.info("Saree photo uploaded successfully: {} (size: {} bytes)", url, file.getSize());
+            log.info("Saree photo uploaded successfully: {} (size: {} bytes)", storedFile.getUrl(), file.getSize());
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "url", url,
-                    "filename", filename,
-                    "size", file.getSize(),
-                    "contentType", contentType
+                    "url", storedFile.getUrl(),
+                    "filename", storedFile.getFilename(),
+                    "size", storedFile.getSize(),
+                    "contentType", storedFile.getContentType()
             ));
         } catch (Exception e) {
             log.error("Failed to store saree photo upload: {}", e.getMessage(), e);
@@ -124,13 +110,6 @@ public class PhotoUploadController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Maximum 10 files per batch"));
         }
 
-        try {
-            Files.createDirectories(UPLOAD_DIR);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("success", false, "error", "Could not create uploads directory"));
-        }
-
         List<String> urls = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
@@ -148,30 +127,17 @@ public class PhotoUploadController {
                     continue;
                 }
 
-                String ext = "jpg";
-                if (contentType.contains("/")) {
-                    String sub = contentType.split("/")[1].toLowerCase().replace("jpeg", "jpg");
-                    if (sub.length() <= 5) ext = sub;
-                }
-
                 String prefix = "";
                 if (productId != null) {
-                    prefix = "product-" + productId + "-";
+                    prefix = "product-" + productId;
                 } else if (sku != null && !sku.isBlank()) {
-                    prefix = "sku-" + sku.replaceAll("[^a-zA-Z0-9_-]", "") + "-";
+                    prefix = "sku-" + sku.replaceAll("[^a-zA-Z0-9_-]", "");
                 } else {
-                    prefix = "product-new-";
+                    prefix = "product-new";
                 }
 
-                String filename = prefix + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 8) + "." + ext;
-                Path dest = UPLOAD_DIR.resolve(filename);
-
-                try (InputStream in = file.getInputStream()) {
-                    Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
-                }
-
-                String photoUrl = "/uploads/saree-photos/" + filename;
-                urls.add(photoUrl);
+                StoredFile storedFile = fileStorageService.store(file, StorageCategory.SAREE_PHOTOS, prefix);
+                urls.add(storedFile.getUrl());
             } catch (Exception e) {
                 errors.add(file.getOriginalFilename() + ": " + e.getMessage());
             }
@@ -192,9 +158,8 @@ public class PhotoUploadController {
     public ResponseEntity<Map<String, Object>> deletePhoto(@PathVariable String filename) {
         try {
             String safe = Paths.get(filename).getFileName().toString();
-            Path target = UPLOAD_DIR.resolve(safe);
-            if (Files.exists(target)) {
-                Files.delete(target);
+            boolean deleted = fileStorageService.delete(StorageCategory.SAREE_PHOTOS, safe);
+            if (deleted) {
                 return ResponseEntity.ok(Map.of("success", true, "deleted", safe));
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("success", false, "error", "Photo not found"));

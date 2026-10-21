@@ -81,6 +81,7 @@ module "ecs" {
   container_image       = var.container_image
   neo4j_enabled         = var.neo4j_enabled
   ssm_secret_arns       = var.ssm_secret_arns
+  s3_bucket_name        = module.s3.bucket_id
 
   # If RDS is enabled, point to RDS endpoint; otherwise preserve TiDB Cloud
   db_url = var.create_rds ? "jdbc:mysql://${module.rds.db_instance_endpoint}/sareekart_db?createDatabaseIfNotExist=false&useSSL=true&allowPublicKeyRetrieval=false" : var.database_url

@@ -5,6 +5,9 @@ import com.sareekart.dto.response.ApiResponse;
 import com.sareekart.dto.response.ReturnResponse;
 import com.sareekart.entity.User;
 import com.sareekart.service.ReturnService;
+import com.sareekart.service.storage.FileStorageService;
+import com.sareekart.service.storage.StorageCategory;
+import com.sareekart.service.storage.StoredFile;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,11 +18,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 /**
@@ -35,12 +33,12 @@ import java.util.*;
 public class ReturnController {
 
     private final ReturnService returnService;
+    private final FileStorageService fileStorageService;
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
             "image/jpeg", "image/jpg", "image/png", "image/webp"
     );
-    private static final Path UPLOAD_DIR = Paths.get("uploads", "return-photos").toAbsolutePath();
 
     /**
      * Submit a new return or exchange request.
@@ -81,8 +79,7 @@ public class ReturnController {
     }
 
     /**
-     * Authenticated defect photo upload storing in uploads/return-photos/
-     * and returning accessible URL (/uploads/return-photos/...).
+     * Authenticated defect photo upload using FileStorageService abstraction.
      * Accepts either 'file' or 'photo' parameter for frontend compatibility.
      */
     @PostMapping(value = "/upload-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -110,30 +107,14 @@ public class ReturnController {
         }
 
         try {
-            Files.createDirectories(UPLOAD_DIR);
+            StoredFile storedFile = fileStorageService.store(targetFile, StorageCategory.RETURN_PHOTOS, "return");
 
-            String ext = "jpg";
-            if (contentType.contains("/")) {
-                String sub = contentType.split("/")[1].toLowerCase().replace("jpeg", "jpg");
-                if (sub.length() <= 5) {
-                    ext = sub;
-                }
-            }
-
-            String filename = "return-" + UUID.randomUUID().toString().substring(0, 12) + "." + ext;
-            Path dest = UPLOAD_DIR.resolve(filename);
-
-            try (InputStream in = targetFile.getInputStream()) {
-                Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            String url = "/uploads/return-photos/" + filename;
             log.info("Defect condition photo uploaded by user #{}: {} (size: {} bytes)",
-                    user != null ? user.getId() : "anon", url, targetFile.getSize());
+                    user != null ? user.getId() : "anon", storedFile.getUrl(), targetFile.getSize());
 
             Map<String, String> data = new HashMap<>();
-            data.put("url", url);
-            data.put("filename", filename);
+            data.put("url", storedFile.getUrl());
+            data.put("filename", storedFile.getFilename());
 
             return ResponseEntity.ok(ApiResponse.success("Photo uploaded successfully", data));
 

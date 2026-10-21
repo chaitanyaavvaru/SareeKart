@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import returnService from '../../services/returnService';
 import { useCurrency } from '../../context/CurrencyContext';
+import AuthenticatedImage from '../common/AuthenticatedImage';
 
 const RETURN_REASONS = [
   {
@@ -506,13 +507,10 @@ export default function ReturnRequestModal({ isOpen, onClose, order, onSuccess }
                       key={url}
                       className="group relative aspect-square overflow-hidden rounded-[8px] border border-[#DDD8CF] bg-[#F7F4EE]"
                     >
-                      <img
+                      <AuthenticatedImage
                         src={url}
                         alt={`Condition defect ${idx + 1}`}
                         className="h-full w-full object-cover"
-                        onError={(e) => {
-                          e.target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&fm=webp&w=200&q=60';
-                        }}
                       />
                       <span className="absolute top-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white uppercase">
                         Photo {idx + 1}

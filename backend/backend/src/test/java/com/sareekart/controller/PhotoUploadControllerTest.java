@@ -4,6 +4,9 @@ import com.sareekart.entity.InventoryItem;
 import com.sareekart.entity.Product;
 import com.sareekart.repository.InventoryItemRepository;
 import com.sareekart.repository.ProductRepository;
+import com.sareekart.service.storage.FileStorageService;
+import com.sareekart.service.storage.StorageCategory;
+import com.sareekart.service.storage.StoredFile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +34,9 @@ class PhotoUploadControllerTest {
 
     @Mock
     private InventoryItemRepository inventoryItemRepository;
+
+    @Mock
+    private FileStorageService fileStorageService;
 
     @InjectMocks
     private PhotoUploadController photoUploadController;
@@ -61,6 +67,16 @@ class PhotoUploadControllerTest {
                 "file", "test.jpg", "image/jpeg", "fake-image-bytes".getBytes()
         );
 
+        when(fileStorageService.store(any(), eq(StorageCategory.SAREE_PHOTOS), any())).thenReturn(
+                StoredFile.builder()
+                        .url("/uploads/saree-photos/generated-uuid.jpg")
+                        .filename("generated-uuid.jpg")
+                        .size(16L)
+                        .contentType("image/jpeg")
+                        .category("saree-photos")
+                        .build()
+        );
+
         ResponseEntity<Map<String, Object>> response = photoUploadController.uploadPhoto(file, 1L, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -69,6 +85,7 @@ class PhotoUploadControllerTest {
         assertTrue(((String) response.getBody().get("url")).startsWith("/uploads/saree-photos/"));
         // Atomicity check: upload must not prematurely mutate product in repository before save
         verify(productRepository, never()).save(any(Product.class));
+        verify(fileStorageService, times(1)).store(any(), eq(StorageCategory.SAREE_PHOTOS), eq("product-1"));
     }
 
     @Test

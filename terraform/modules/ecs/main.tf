@@ -174,7 +174,10 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "SPRING_FLYWAY_BASELINE_ON_MIGRATE", value = "false" },
         { name = "NEO4J_ENABLED", value = tostring(var.neo4j_enabled) },
         { name = "HIKARI_MAX_POOL_SIZE", value = "8" },
-        { name = "HIKARI_MIN_IDLE", value = "2" }
+        { name = "HIKARI_MIN_IDLE", value = "2" },
+        { name = "STORAGE_TYPE", value = "s3" },
+        { name = "AWS_S3_BUCKET_NAME", value = var.s3_bucket_name },
+        { name = "AWS_REGION", value = "ap-south-1" }
       ]
 
       # Dynamic SSM Parameter Store secret injection

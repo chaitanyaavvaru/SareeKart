@@ -111,7 +111,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/generate-recovery-key").authenticated()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/uploads/saree-photos/**").permitAll()
+                .requestMatchers("/uploads/return-photos/**").authenticated()
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/api/webhook/**", "/api/payments/webhook", "/ws-sareekart/**").permitAll()
                 .requestMatchers("/api/trousseau/share/**").permitAll()

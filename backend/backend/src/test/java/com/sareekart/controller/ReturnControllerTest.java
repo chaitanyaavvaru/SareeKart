@@ -6,6 +6,9 @@ import com.sareekart.dto.response.ReturnResponse;
 import com.sareekart.entity.Role;
 import com.sareekart.entity.User;
 import com.sareekart.service.ReturnService;
+import com.sareekart.service.storage.FileStorageService;
+import com.sareekart.service.storage.StorageCategory;
+import com.sareekart.service.storage.StoredFile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +33,9 @@ class ReturnControllerTest {
 
     @Mock
     private ReturnService returnService;
+
+    @Mock
+    private FileStorageService fileStorageService;
 
     @InjectMocks
     private ReturnController returnController;
@@ -117,12 +123,23 @@ class ReturnControllerTest {
                 "test image content".getBytes()
         );
 
+        when(fileStorageService.store(any(), eq(StorageCategory.RETURN_PHOTOS), any())).thenReturn(
+                StoredFile.builder()
+                        .url("/uploads/return-photos/defect-uuid.jpg")
+                        .filename("defect-uuid.jpg")
+                        .size(18L)
+                        .contentType("image/jpeg")
+                        .category("return-photos")
+                        .build()
+        );
+
         ResponseEntity<ApiResponse<Map<String, String>>> response = returnController.uploadPhoto(testUser, file, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertTrue(response.getBody().isSuccess());
         assertTrue(response.getBody().getData().get("url").startsWith("/uploads/return-photos/"));
+        verify(fileStorageService, times(1)).store(any(), eq(StorageCategory.RETURN_PHOTOS), eq("return"));
     }
 
     @Test

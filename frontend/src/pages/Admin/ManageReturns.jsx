@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import returnService from '../../services/returnService';
 import SEO from '../../components/common/SEO';
+import AuthenticatedImage from '../../components/common/AuthenticatedImage';
 
 // Resilient Offline Mock Claims Fallback
 const MOCK_ADMIN_RETURNS = [
@@ -648,13 +649,10 @@ export default function ManageReturns() {
                                 className="group relative h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-[#DDD8CF] hover:border-[#1E6A62] transition cursor-pointer"
                                 title="Click to inspect photo in lightbox"
                               >
-                                <img
+                                <AuthenticatedImage
                                   src={imgUrl}
                                   alt={`Defect ${i + 1}`}
                                   className="h-full w-full object-cover group-hover:scale-110 transition duration-200"
-                                  onError={(e) => {
-                                    e.target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&fm=webp&w=150&q=80';
-                                  }}
                                 />
                                 <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
                                   <Eye className="w-3.5 h-3.5" />
@@ -856,13 +854,10 @@ export default function ManageReturns() {
                 {inspectClaim.images && inspectClaim.images.length > 0 ? (
                   <>
                     <div className="relative flex-1 flex items-center justify-center overflow-hidden rounded-2xl bg-black/40">
-                      <img
+                      <AuthenticatedImage
                         src={inspectClaim.images[inspectPhotoIndex] || inspectClaim.images[0]}
                         alt={`Evidence photo ${inspectPhotoIndex + 1}`}
                         className="max-h-[420px] w-full object-contain rounded-xl"
-                        onError={(e) => {
-                          e.target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&fm=webp&w=800&q=80';
-                        }}
                       />
                       {inspectClaim.images.length > 1 && (
                         <>
@@ -899,7 +894,7 @@ export default function ManageReturns() {
                               inspectPhotoIndex === idx ? 'border-[#F3C56A]' : 'border-white/30 opacity-60 hover:opacity-100'
                             }`}
                           >
-                            <img src={img} alt="" className="h-full w-full object-cover" />
+                            <AuthenticatedImage src={img} alt="" className="h-full w-full object-cover" />
                           </button>
                         ))}
                       </div>
